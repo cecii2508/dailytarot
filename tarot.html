@@ -1,0 +1,1285 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>神秘塔羅 · Mystic Tarot</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.4.21/vue.global.prod.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=LINESeedTW+Decorative:wght@400;700&family=LINESeedTW:wght@400;600&family=Noto+Serif+TC:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0d0a14;
+    --parchment: #f5efe0;
+    --gold: #c9a84c;
+    --gold-light: #e8c97a;
+    --gold-dim: #7a5f2a;
+    --mystic: #3d1f6e;
+    --mystic-light: #6b3fa0;
+    --crimson: #8b1a2e;
+    --silver: #b8b0c8;
+    --card-back: #1a0f2e;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  @font-face {
+    font-family: 'LINESeedTW'; /* 自定義字體名稱 */
+    src: url('../fonts/LINESeedTW_OTF_Th.woff2') format('woff2'); /* 相對路徑 */
+    font-weight: normal;
+    font-style: normal;
+}
+
+  body {
+    background-color: var(--ink);
+    color: var(--parchment);
+    font-family: 'LINESeedTW', serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+    background-image:
+      radial-gradient(ellipse at 20% 20%, rgba(61,31,110,0.4) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 80%, rgba(139,26,46,0.2) 0%, transparent 50%),
+      url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23c9a84c' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  }
+
+  /* ─── STARS ─── */
+  .stars {
+    position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    overflow: hidden;
+  }
+  .star {
+    position: absolute;
+    border-radius: 50%;
+    background: white;
+    animation: twinkle var(--d) ease-in-out infinite;
+    animation-delay: var(--delay);
+  }
+  @keyframes twinkle {
+    0%,100% { opacity: var(--min-o); transform: scale(1); }
+    50% { opacity: var(--max-o); transform: scale(1.3); }
+  }
+
+  /* ─── LAYOUT ─── */
+  #app { position: relative; z-index: 1; }
+
+  .header {
+    text-align: center;
+    padding: 48px 20px 32px;
+  }
+  .header-ornament {
+    color: var(--gold);
+    font-size: 1.2rem;
+    letter-spacing: 0.5em;
+    margin-bottom: 12px;
+    opacity: 0.7;
+  }
+  .header h1 {
+    font-family: 'LINESeedTW', cursive;
+    font-size: clamp(1.6rem, 6vw, 2.8rem);
+    color: var(--gold-light);
+    text-shadow: 0 0 40px rgba(201,168,76,0.5), 0 2px 4px rgba(0,0,0,0.8);
+    line-height: 1.2;
+    letter-spacing: 0.05em;
+  }
+  .header-sub {
+    font-family: 'LINESeedTW', serif;
+    font-size: 0.75rem;
+    color: var(--silver);
+    letter-spacing: 0.4em;
+    margin-top: 10px;
+    text-transform: uppercase;
+  }
+  .divider {
+    display: flex; align-items: center; gap: 12px;
+    margin: 20px auto; max-width: 300px;
+  }
+  .divider-line { flex: 1; height: 1px; background: linear-gradient(90deg, transparent, var(--gold-dim), transparent); }
+  .divider-gem { color: var(--gold); font-size: 0.9rem; }
+
+  /* ─── MAIN ─── */
+  .main { max-width: 680px; margin: 0 auto; padding: 0 16px 80px; }
+
+  /* ─── STEP INDICATOR ─── */
+  .steps {
+    display: flex; justify-content: center; gap: 0; margin-bottom: 36px;
+  }
+  .step-item {
+    display: flex; align-items: center; gap: 0;
+  }
+  .step-dot {
+    width: 32px; height: 32px; border-radius: 50%;
+    border: 1.5px solid var(--gold-dim);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'LINESeedTW', serif; font-size: 0.7rem;
+    color: var(--gold-dim);
+    transition: all 0.4s;
+    position: relative;
+  }
+  .step-dot.active {
+    border-color: var(--gold);
+    color: var(--gold);
+    background: rgba(201,168,76,0.1);
+    box-shadow: 0 0 16px rgba(201,168,76,0.3);
+  }
+  .step-dot.done {
+    border-color: var(--gold);
+    background: var(--gold);
+    color: var(--ink);
+  }
+  .step-label {
+    font-size: 0.6rem; letter-spacing: 0.15em;
+    color: var(--silver); margin-top: 4px;
+    white-space: nowrap;
+    position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%);
+    font-family: 'LINESeedTW', serif;
+  }
+  .step-line {
+    width: 48px; height: 1px;
+    background: linear-gradient(90deg, var(--gold-dim), var(--gold-dim));
+    opacity: 0.4;
+  }
+
+  /* ─── PANEL ─── */
+  .panel {
+    background: rgba(13,10,20,0.7);
+    border: 1px solid rgba(201,168,76,0.2);
+    border-radius: 2px;
+    padding: 28px 24px;
+    backdrop-filter: blur(12px);
+    position: relative;
+    overflow: hidden;
+  }
+  .panel::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(201,168,76,0.04) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .corner {
+    position: absolute; width: 20px; height: 20px;
+    border-color: var(--gold); border-style: solid; opacity: 0.5;
+  }
+  .corner-tl { top: 8px; left: 8px; border-width: 1px 0 0 1px; }
+  .corner-tr { top: 8px; right: 8px; border-width: 1px 1px 0 0; }
+  .corner-bl { bottom: 8px; left: 8px; border-width: 0 0 1px 1px; }
+  .corner-br { bottom: 8px; right: 8px; border-width: 0 1px 1px 0; }
+
+  .panel-title {
+    font-family: 'LINESeedTW', serif;
+    font-size: 0.72rem; letter-spacing: 0.35em;
+    color: var(--gold); text-align: center;
+    margin-bottom: 20px; text-transform: uppercase;
+  }
+
+  /* ─── SCENARIO ─── */
+  .scenario-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  @media(min-width:480px) { .scenario-grid { grid-template-columns: repeat(3, 1fr); } }
+
+  .scenario-btn {
+    background: rgba(61,31,110,0.2);
+    border: 1px solid rgba(201,168,76,0.2);
+    border-radius: 2px;
+    padding: 14px 10px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.3s;
+    color: var(--parchment);
+    font-family: 'LINESeedTW', serif;
+    position: relative; overflow: hidden;
+  }
+  .scenario-btn::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(201,168,76,0.1), transparent);
+    opacity: 0; transition: opacity 0.3s;
+  }
+  .scenario-btn:hover::after, .scenario-btn.selected::after { opacity: 1; }
+  .scenario-btn:hover, .scenario-btn.selected {
+    border-color: var(--gold);
+    box-shadow: 0 0 20px rgba(201,168,76,0.15), inset 0 0 20px rgba(201,168,76,0.05);
+  }
+  .scenario-btn.selected { background: rgba(61,31,110,0.5); }
+  .scenario-icon { font-size: 1.5rem; margin-bottom: 6px; display: block; }
+  .scenario-name { font-size: 0.82rem; color: var(--gold-light); display: block; }
+  .scenario-desc { font-size: 0.65rem; color: var(--silver); display: block; margin-top: 3px; line-height: 1.4; }
+
+  /* ─── SPREAD SELECT ─── */
+  .spread-options { display: flex; flex-direction: column; gap: 10px; }
+  .spread-btn {
+    background: rgba(61,31,110,0.2);
+    border: 1px solid rgba(201,168,76,0.2);
+    border-radius: 2px;
+    padding: 16px 18px;
+    cursor: pointer;
+    display: flex; align-items: center; gap: 14px;
+    transition: all 0.3s;
+    color: var(--parchment);
+    font-family: 'LINESeedTW', serif;
+    text-align: left;
+  }
+  .spread-btn:hover, .spread-btn.selected {
+    border-color: var(--gold);
+    background: rgba(61,31,110,0.4);
+    box-shadow: 0 0 20px rgba(201,168,76,0.1);
+  }
+  .spread-icon { font-size: 1.6rem; flex-shrink: 0; }
+  .spread-name { font-size: 0.88rem; color: var(--gold-light); display: block; font-family: 'LINESeedTW', serif; }
+  .spread-info { font-size: 0.7rem; color: var(--silver); display: block; margin-top: 3px; }
+
+  /* ─── CARD DECK ─── */
+  .deck-area {
+    text-align: center; padding: 10px 0;
+  }
+  .deck-instruction {
+    font-size: 0.8rem; color: var(--silver);
+    margin-bottom: 24px; line-height: 1.7;
+    font-style: italic;
+  }
+  .deck-container {
+    position: relative; display: inline-block;
+    margin: 0 auto 24px;
+  }
+  .deck-stack {
+    position: relative; width: 110px; height: 180px;
+    cursor: pointer;
+    margin: 0 auto;
+  }
+  .deck-card {
+    position: absolute;
+    width: 110px; height: 180px;
+    border-radius: 8px;
+    background: var(--card-back);
+    border: 1px solid var(--gold-dim);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+    transition: transform 0.3s;
+    background-image:
+      repeating-linear-gradient(45deg, rgba(201,168,76,0.04) 0px, rgba(201,168,76,0.04) 1px, transparent 1px, transparent 10px),
+      repeating-linear-gradient(-45deg, rgba(201,168,76,0.04) 0px, rgba(201,168,76,0.04) 1px, transparent 1px, transparent 10px);
+  }
+  .deck-card:nth-child(1) { transform: translate(-3px, -3px) rotate(-2deg); }
+  .deck-card:nth-child(2) { transform: translate(0px, -1px) rotate(0.5deg); }
+  .deck-card:nth-child(3) { transform: translate(2px, 1px) rotate(1.5deg); }
+  .deck-card-top {
+    position: relative; z-index: 3;
+    display: flex; align-items: center; justify-content: center;
+    transition: transform 0.3s, box-shadow 0.3s;
+  }
+  .deck-stack:hover .deck-card-top {
+    transform: translate(2px, 1px) rotate(1.5deg) translateY(-8px) !important;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.8), 0 0 30px rgba(201,168,76,0.2);
+  }
+  .deck-symbol {
+    font-size: 2.5rem; opacity: 0.3;
+  }
+
+  /* card back inner design */
+  .deck-card-top::before {
+    content: '';
+    position: absolute; inset: 8px;
+    border: 1px solid rgba(201,168,76,0.2);
+    border-radius: 4px;
+  }
+  .deck-card-top::after {
+    content: '✦';
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%,-50%);
+    font-size: 2rem; color: rgba(201,168,76,0.2);
+  }
+
+  .shuffle-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: linear-gradient(135deg, var(--mystic), var(--mystic-light));
+    border: 1px solid var(--gold);
+    color: var(--gold-light);
+    font-family: 'LINESeedTW', serif;
+    font-size: 0.8rem;
+    letter-spacing: 0.2em;
+    padding: 12px 28px;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-transform: uppercase;
+  }
+  .shuffle-btn:hover {
+    background: linear-gradient(135deg, var(--mystic-light), var(--mystic));
+    box-shadow: 0 0 30px rgba(201,168,76,0.3);
+    transform: translateY(-1px);
+  }
+  .shuffle-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  /* ─── DRAWN CARDS ─── */
+  .drawn-area { margin-top: 28px; }
+  .drawn-title {
+    font-family: 'LINESeedTW', serif; font-size: 0.7rem;
+    letter-spacing: 0.3em; color: var(--gold);
+    text-align: center; margin-bottom: 16px;
+    text-transform: uppercase;
+  }
+
+  /* spread layouts */
+  .spread-single { display: flex; justify-content: center; }
+  .spread-three { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
+  .spread-celtic {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    max-width: 360px; margin: 0 auto;
+  }
+  .celtic-card-1 { grid-column: 2; grid-row: 2; }
+  .celtic-card-2 { grid-column: 2; grid-row: 2; }
+  .celtic-card-3 { grid-column: 2; grid-row: 1; }
+  .celtic-card-4 { grid-column: 2; grid-row: 3; }
+  .celtic-card-5 { grid-column: 1; grid-row: 2; }
+  .celtic-card-6 { grid-column: 3; grid-row: 2; }
+  .celtic-card-7 { grid-column: 4; grid-row: 3; }
+  .celtic-card-8 { grid-column: 4; grid-row: 2-3; }
+  .celtic-card-9 { grid-column: 4; grid-row: 2; }
+  .celtic-card-10 { grid-column: 4; grid-row: 1; }
+
+  /* tarot card */
+  .tarot-card-wrap {
+    flex-shrink: 0;
+  }
+  .tarot-card-wrap .position-label {
+    font-family: 'LINESeedTW', serif; font-size: 0.58rem;
+    letter-spacing: 0.2em; color: var(--gold-dim);
+    text-align: center; margin-bottom: 6px;
+    text-transform: uppercase;
+  }
+  .tarot-card {
+    width: 90px;
+    cursor: pointer;
+    transition: transform 0.3s;
+  }
+  @media(min-width:480px) { .tarot-card { width: 110px; } }
+  .tarot-card:hover { transform: translateY(-4px); }
+
+  .tarot-card-inner {
+    position: relative;
+    width: 100%; padding-top: 177.8%; /* 9:16 */
+    border-radius: 8px;
+    overflow: hidden;
+    perspective: 600px;
+  }
+  .tarot-card-face, .tarot-card-back {
+    position: absolute; inset: 0;
+    backface-visibility: hidden;
+    border-radius: 8px;
+    transition: transform 0.7s cubic-bezier(.4,2,.6,1);
+  }
+  .tarot-card-back {
+    background: var(--card-back);
+    border: 1px solid var(--gold-dim);
+    display: flex; align-items: center; justify-content: center;
+    background-image:
+      repeating-linear-gradient(45deg, rgba(201,168,76,0.04) 0px, rgba(201,168,76,0.04) 1px, transparent 1px, transparent 10px),
+      repeating-linear-gradient(-45deg, rgba(201,168,76,0.04) 0px, rgba(201,168,76,0.04) 1px, transparent 1px, transparent 10px);
+    transform: rotateY(0deg);
+    font-size: 2rem; color: rgba(201,168,76,0.2);
+  }
+  .tarot-card-back::before {
+    content: '';
+    position: absolute; inset: 6px;
+    border: 1px solid rgba(201,168,76,0.15);
+    border-radius: 4px;
+  }
+  .tarot-card-face {
+    transform: rotateY(-180deg);
+    background: linear-gradient(160deg, #f5efe0 0%, #e8dcc8 100%);
+    border: 2px solid var(--gold-dim);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: space-between;
+    padding: 6px 4px;
+  }
+  .tarot-card-face.reversed {
+    transform: rotateY(-180deg) rotate(180deg);
+  }
+
+  .card-flipped .tarot-card-back { transform: rotateY(180deg); }
+  .card-flipped .tarot-card-face { transform: rotateY(0deg); }
+  .card-flipped .tarot-card-face.reversed { transform: rotateY(0deg) rotate(180deg); }
+
+  .card-name-top, .card-name-bottom {
+    font-family: 'LINESeedTW', serif;
+    font-size: 0.42rem; letter-spacing: 0.1em;
+    color: var(--ink); text-align: center;
+    line-height: 1.2; width: 100%;
+  }
+  .card-name-bottom { transform: rotate(180deg); }
+
+  .card-art {
+    flex: 1; width: 100%;
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+    background: rgba(61,31,110,0.06);
+    margin: 3px 0;
+    border: 1px solid rgba(201,168,76,0.2);
+    overflow: hidden;
+  }
+  .card-symbol { font-size: 2.8rem; line-height: 1; }
+  .card-img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    object-position: top center;
+    display: block;
+    border-radius: 2px;
+  }
+  .card-number {
+    position: absolute; bottom: 3px; right: 4px;
+    font-family: 'LINESeedTW', serif; font-size: 0.5rem;
+    color: var(--gold-dim);
+  }
+  .reversed-badge {
+    position: absolute; top: 3px; left: 3px;
+    font-size: 0.38rem; background: var(--crimson);
+    color: white; padding: 1px 3px; border-radius: 1px;
+    font-family: 'LINESeedTW', serif; letter-spacing: 0.05em;
+  }
+
+  /* ─── READING PANEL ─── */
+  .reading-panel {
+    margin-top: 28px;
+  }
+  .reading-card-section {
+    margin-bottom: 24px;
+    border-left: 2px solid var(--gold-dim);
+    padding-left: 16px;
+  }
+  .reading-card-header {
+    display: flex; align-items: baseline; gap: 10px;
+    margin-bottom: 10px;
+  }
+  .reading-position {
+    font-family: 'LINESeedTW', serif; font-size: 0.65rem;
+    letter-spacing: 0.2em; color: var(--gold-dim);
+    text-transform: uppercase;
+  }
+  .reading-card-name {
+    font-family: 'LINESeedTW', serif; font-size: 0.9rem;
+    color: var(--gold-light);
+  }
+  .reading-reversed {
+    font-size: 0.6rem; color: var(--crimson);
+    font-family: 'LINESeedTW', serif; border: 1px solid var(--crimson);
+    padding: 1px 5px;
+  }
+  .reading-text {
+    font-size: 0.83rem; line-height: 1.85;
+    color: rgba(245,239,224,0.85);
+  }
+  .loading-dots {
+    display: inline-flex; gap: 4px; align-items: center;
+  }
+  .loading-dot {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--gold);
+    animation: bounce 1.2s ease-in-out infinite;
+  }
+  .loading-dot:nth-child(2) { animation-delay: 0.2s; }
+  .loading-dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce {
+    0%,80%,100% { transform: scale(0.6); opacity: 0.4; }
+    40% { transform: scale(1); opacity: 1; }
+  }
+
+  /* ─── BUTTONS ─── */
+  .action-row {
+    display: flex; gap: 10px; justify-content: center;
+    margin-top: 28px; flex-wrap: wrap;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--mystic), var(--mystic-light));
+    border: 1px solid var(--gold);
+    color: var(--gold-light);
+    font-family: 'LINESeedTW', serif;
+    font-size: 0.75rem; letter-spacing: 0.2em;
+    padding: 12px 24px;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-transform: uppercase;
+  }
+  .btn-primary:hover {
+    box-shadow: 0 0 24px rgba(201,168,76,0.3);
+    transform: translateY(-1px);
+  }
+  .btn-ghost {
+    background: transparent;
+    border: 1px solid rgba(201,168,76,0.3);
+    color: var(--silver);
+    font-family: 'LINESeedTW', serif;
+    font-size: 0.72rem; letter-spacing: 0.15em;
+    padding: 12px 20px;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-transform: uppercase;
+  }
+  .btn-ghost:hover { border-color: var(--gold-dim); color: var(--gold-dim); }
+
+  /* ─── TRANSITIONS ─── */
+  .fade-enter-active, .fade-leave-active { transition: opacity 0.4s, transform 0.4s; }
+  .fade-enter-from { opacity: 0; transform: translateY(16px); }
+  .fade-leave-to { opacity: 0; transform: translateY(-8px); }
+
+  @keyframes cardReveal {
+    from { opacity: 0; transform: translateY(20px) scale(0.9); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .card-appear { animation: cardReveal 0.5s ease forwards; }
+
+  /* ─── ORACLE TITLE ─── */
+  .oracle-msg {
+    text-align: center;
+    font-family: 'LINESeedTW', serif;
+    font-size: 0.72rem; letter-spacing: 0.3em;
+    color: var(--gold); margin-bottom: 20px;
+    text-transform: uppercase;
+  }
+
+  .mb16 { margin-bottom: 16px; }
+  .mt20 { margin-top: 20px; }
+
+  /* ─── LIGHTBOX ─── */
+  .lightbox-overlay {
+    position: fixed; inset: 0; z-index: 999;
+    background: rgba(5,3,10,0.92);
+    backdrop-filter: blur(8px);
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+    animation: lbFadeIn 0.3s ease;
+  }
+  @keyframes lbFadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  .lightbox-inner {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    max-height: 92vh;
+    animation: lbSlideUp 0.35s cubic-bezier(.2,1.4,.6,1);
+  }
+  @keyframes lbSlideUp {
+    from { opacity: 0; transform: translateY(30px) scale(0.92); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .lightbox-card {
+    position: relative;
+    width: min(260px, 60vw);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow:
+      0 0 0 1px var(--gold-dim),
+      0 0 40px rgba(201,168,76,0.25),
+      0 20px 60px rgba(0,0,0,0.8);
+    flex-shrink: 0;
+  }
+  .lightbox-card img {
+    width: 100%;
+    display: block;
+  }
+  .lightbox-card.reversed img {
+    transform: rotate(180deg);
+  }
+  .lightbox-card-glow {
+    position: absolute; inset: 0;
+    border-radius: 12px;
+    box-shadow: inset 0 0 30px rgba(201,168,76,0.12);
+    pointer-events: none;
+  }
+  .lightbox-badge {
+    position: absolute; top: 10px; left: 10px;
+    background: var(--crimson);
+    color: white;
+    font-family: 'LINESeedTW', serif;
+    font-size: 0.62rem; letter-spacing: 0.12em;
+    padding: 3px 8px; border-radius: 2px;
+  }
+  .lightbox-info {
+    text-align: center;
+    display: flex; flex-direction: column; gap: 6px;
+    flex-shrink: 0;
+  }
+  .lightbox-position {
+    font-family: 'LINESeedTW', serif;
+    font-size: 0.62rem; letter-spacing: 0.3em;
+    color: var(--gold-dim); text-transform: uppercase;
+  }
+  .lightbox-name {
+    font-family: 'LINESeedTW', cursive;
+    font-size: clamp(1rem, 4vw, 1.4rem);
+    color: var(--gold-light);
+    text-shadow: 0 0 20px rgba(201,168,76,0.4);
+  }
+  .lightbox-keywords {
+    font-family: 'LINESeedTW', serif;
+    font-size: 0.72rem;
+    color: var(--silver);
+    letter-spacing: 0.1em;
+  }
+  .lightbox-close {
+    position: absolute; top: -14px; right: -14px;
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--ink);
+    border: 1px solid var(--gold-dim);
+    color: var(--gold);
+    font-size: 1rem; line-height: 1;
+    cursor: pointer; display: flex;
+    align-items: center; justify-content: center;
+    transition: all 0.2s;
+  }
+  .lightbox-close:hover {
+    background: var(--mystic);
+    border-color: var(--gold);
+    box-shadow: 0 0 12px rgba(201,168,76,0.3);
+  }
+  /* 讓牌卡有點擊提示 */
+  .tarot-card { cursor: pointer; }
+  .tarot-card:hover .tarot-card-face {
+    filter: brightness(1.08);
+  }
+
+</style>
+</head>
+<body>
+
+<!-- STARS -->
+<div class="stars" id="stars"></div>
+
+<div id="app">
+  <header class="header">
+    <div class="header-ornament">✦ ✦ ✦</div>
+    <h1>神秘塔羅</h1>
+    <div class="header-sub">Rider-Waite Tarot Oracle</div>
+    <div class="divider">
+      <div class="divider-line"></div>
+      <div class="divider-gem">◆</div>
+      <div class="divider-line"></div>
+    </div>
+  </header>
+
+  <main class="main">
+    <!-- STEP INDICATOR -->
+    <div class="steps" style="margin-bottom:52px">
+      <div class="step-item" v-for="(s,i) in stepLabels" :key="i">
+        <div class="step-dot" :class="{ active: step===i+1, done: step>i+1 }">
+          {{ step > i+1 ? '✓' : i+1 }}
+          <span class="step-label">{{ s }}</span>
+        </div>
+        <div class="step-line" v-if="i < stepLabels.length-1"></div>
+      </div>
+    </div>
+
+    <!-- STEP 1: SCENARIO -->
+    <transition name="fade">
+      <div v-if="step===1" class="panel">
+        <div class="corner corner-tl"></div><div class="corner corner-tr"></div>
+        <div class="corner corner-bl"></div><div class="corner corner-br"></div>
+        <div class="panel-title">選擇你的情境</div>
+        <div class="scenario-grid">
+          <button
+            v-for="sc in scenarios" :key="sc.id"
+            class="scenario-btn" :class="{selected: selectedScenario===sc.id}"
+            @click="selectedScenario=sc.id"
+          >
+            <span class="scenario-icon">{{ sc.icon }}</span>
+            <span class="scenario-name">{{ sc.name }}</span>
+            <span class="scenario-desc">{{ sc.desc }}</span>
+          </button>
+        </div>
+        <div class="action-row">
+          <button class="btn-primary" :disabled="!selectedScenario" @click="step=2">繼續 →</button>
+        </div>
+      </div>
+    </transition>
+
+    <!-- STEP 2: SPREAD -->
+    <transition name="fade">
+      <div v-if="step===2" class="panel">
+        <div class="corner corner-tl"></div><div class="corner corner-tr"></div>
+        <div class="corner corner-bl"></div><div class="corner corner-br"></div>
+        <div class="panel-title">選擇牌陣</div>
+        <div class="spread-options">
+          <button
+            v-for="sp in spreads" :key="sp.id"
+            class="spread-btn" :class="{selected: selectedSpread===sp.id}"
+            @click="selectedSpread=sp.id"
+          >
+            <span class="spread-icon">{{ sp.icon }}</span>
+            <div>
+              <span class="spread-name">{{ sp.name }}</span>
+              <span class="spread-info">{{ sp.cards }}張牌 · {{ sp.desc }}</span>
+            </div>
+          </button>
+        </div>
+        <div class="action-row">
+          <button class="btn-ghost" @click="step=1">← 返回</button>
+          <button class="btn-primary" :disabled="!selectedSpread" @click="step=3">繼續 →</button>
+        </div>
+      </div>
+    </transition>
+
+    <!-- STEP 3: DRAW -->
+    <transition name="fade">
+      <div v-if="step===3" class="panel">
+        <div class="corner corner-tl"></div><div class="corner corner-tr"></div>
+        <div class="corner corner-bl"></div><div class="corner corner-br"></div>
+        <div class="panel-title">抽取神諭</div>
+        <div class="deck-area">
+          <p class="deck-instruction">
+            靜心凝神，將你的問題放在心中<br>
+            點擊牌堆，讓命運指引你的道路
+          </p>
+          <div class="deck-container">
+            <div class="deck-stack" @click="drawCards" :style="shuffling?'pointer-events:none':''">
+              <div class="deck-card"></div>
+              <div class="deck-card"></div>
+              <div class="deck-card deck-card-top">✦</div>
+            </div>
+          </div>
+          <br>
+          <button class="shuffle-btn" @click="shuffle" :disabled="shuffling">
+            {{ shuffling ? '洗牌中...' : '🔀 洗牌' }}
+          </button>
+
+          <!-- DRAWN CARDS -->
+          <div class="drawn-area" v-if="drawnCards.length">
+            <div class="drawn-title">{{ currentSpread.name }}</div>
+
+            <!-- SINGLE -->
+            <div v-if="currentSpread.id==='single'" class="spread-single">
+              <div v-for="(c,i) in drawnCards" :key="i" class="tarot-card-wrap">
+                <div class="position-label">{{ currentSpread.positions[i] }}</div>
+                <div class="tarot-card card-appear" :style="'animation-delay:'+i*0.15+'s'" @click="c.flipped && openLightbox(c, currentSpread.positions[i])">
+                  <div class="tarot-card-inner">
+                    <div class="tarot-card-back">✦</div>
+                    <div class="tarot-card-face" :class="{reversed:c.reversed, 'card-flipped':c.flipped}">
+                      <div class="card-name-top">{{ c.name }}</div>
+                      <div class="card-art">
+                        <img class="card-img" :src="c.img" :alt="c.name" loading="lazy">
+                        <span class="card-number">{{ c.num }}</span>
+                        <span v-if="c.reversed" class="reversed-badge">逆位</span>
+                      </div>
+                      <div class="card-name-bottom">{{ c.name }}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- THREE -->
+            <div v-if="currentSpread.id==='three'" class="spread-three">
+              <div v-for="(c,i) in drawnCards" :key="i" class="tarot-card-wrap">
+                <div class="position-label">{{ currentSpread.positions[i] }}</div>
+                <div class="tarot-card card-appear" :style="'animation-delay:'+i*0.15+'s'" @click="c.flipped && openLightbox(c, currentSpread.positions[i])">
+                  <div class="tarot-card-inner" :class="{'card-flipped':c.flipped}">
+                    <div class="tarot-card-back">✦</div>
+                    <div class="tarot-card-face" :class="{reversed:c.reversed}">
+                      <div class="card-name-top">{{ c.name }}</div>
+                      <div class="card-art">
+                        <img class="card-img" :src="c.img" :alt="c.name" loading="lazy">
+                        <span class="card-number">{{ c.num }}</span>
+                        <span v-if="c.reversed" class="reversed-badge">逆位</span>
+                      </div>
+                      <div class="card-name-bottom">{{ c.name }}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- CELTIC -->
+            <div v-if="currentSpread.id==='celtic'" class="spread-three">
+              <div v-for="(c,i) in drawnCards" :key="i" class="tarot-card-wrap">
+                <div class="position-label">{{ currentSpread.positions[i] }}</div>
+                <div class="tarot-card card-appear" style="width:72px" :style="'animation-delay:'+i*0.12+'s'" @click="c.flipped && openLightbox(c, currentSpread.positions[i])">
+                  <div class="tarot-card-inner" :class="{'card-flipped':c.flipped}">
+                    <div class="tarot-card-back">✦</div>
+                    <div class="tarot-card-face" :class="{reversed:c.reversed}">
+                      <div class="card-name-top">{{ c.name }}</div>
+                      <div class="card-art">
+                        <img class="card-img" :src="c.img" :alt="c.name" loading="lazy">
+                        <span class="card-number">{{ c.num }}</span>
+                        <span v-if="c.reversed" class="reversed-badge">逆位</span>
+                      </div>
+                      <div class="card-name-bottom">{{ c.name }}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="action-row">
+          <button class="btn-ghost" @click="step=2;drawnCards=[]">← 返回</button>
+          <button class="btn-primary" v-if="drawnCards.length && drawnCards.every(c=>c.flipped)" @click="getReading">
+            解讀牌義 ✨
+          </button>
+        </div>
+      </div>
+    </transition>
+
+    <!-- STEP 4: READING -->
+    <transition name="fade">
+      <div v-if="step===4" class="panel">
+        <div class="corner corner-tl"></div><div class="corner corner-tr"></div>
+        <div class="corner corner-bl"></div><div class="corner corner-br"></div>
+        <div class="panel-title">命運的低語</div>
+
+        <div class="oracle-msg">
+          {{ currentScenario.name }} · {{ currentSpread.name }}
+        </div>
+
+        <!-- mini card row -->
+        <div class="spread-three" style="margin-bottom:24px">
+          <div v-for="(c,i) in drawnCards" :key="i" class="tarot-card-wrap">
+            <div class="position-label">{{ currentSpread.positions[i] }}</div>
+            <div class="tarot-card" style="width:70px" @click="openLightbox(c, currentSpread.positions[i])">
+              <div class="tarot-card-inner card-flipped">
+                <div class="tarot-card-back">✦</div>
+                <div class="tarot-card-face" :class="{reversed:c.reversed}">
+                  <div class="card-name-top">{{ c.name }}</div>
+                  <div class="card-art">
+                    <img class="card-img" :src="c.img" :alt="c.name" loading="lazy">
+                    <span v-if="c.reversed" class="reversed-badge">逆位</span>
+                  </div>
+                  <div class="card-name-bottom">{{ c.name }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="reading-panel">
+          <div v-for="(c,i) in drawnCards" :key="i" class="reading-card-section">
+            <div class="reading-card-header">
+              <span class="reading-position">{{ currentSpread.positions[i] }}</span>
+              <span class="reading-card-name">{{ c.name }}</span>
+              <span v-if="c.reversed" class="reading-reversed">逆位</span>
+            </div>
+            <div class="reading-text">
+              <template v-if="readings[i]">{{ readings[i] }}</template>
+              <span v-else class="loading-dots">
+                <span class="loading-dot"></span>
+                <span class="loading-dot"></span>
+                <span class="loading-dot"></span>
+              </span>
+            </div>
+          </div>
+
+          <div v-if="summaryReading" class="reading-card-section" style="border-left-color:var(--gold);margin-top:28px">
+            <div class="reading-card-header">
+              <span class="reading-position" style="color:var(--gold)">整體綜合解讀</span>
+            </div>
+            <div class="reading-text">{{ summaryReading }}</div>
+          </div>
+          <div v-else-if="summaryLoading" class="reading-card-section" style="border-left-color:var(--gold);margin-top:28px">
+            <div class="reading-card-header">
+              <span class="reading-position" style="color:var(--gold)">整體綜合解讀</span>
+            </div>
+            <div class="reading-text">
+              <span class="loading-dots">
+                <span class="loading-dot"></span>
+                <span class="loading-dot"></span>
+                <span class="loading-dot"></span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="action-row">
+          <button class="btn-ghost" @click="restart">重新開始</button>
+        </div>
+      </div>
+    </transition>
+  </main>
+
+  <!-- LIGHTBOX -->
+  <transition name="fade">
+    <div class="lightbox-overlay" v-if="lightbox" @click.self="lightbox=null">
+      <div class="lightbox-inner">
+        <div class="lightbox-card" :class="{reversed: lightbox.reversed}">
+          <img :src="lightbox.img" :alt="lightbox.name">
+          <div class="lightbox-card-glow"></div>
+          <span v-if="lightbox.reversed" class="lightbox-badge">逆位</span>
+          <button class="lightbox-close" @click="lightbox=null">✕</button>
+        </div>
+        <div class="lightbox-info">
+          <div class="lightbox-position" v-if="lightbox.position">{{ lightbox.position }}</div>
+          <div class="lightbox-name">{{ lightbox.name }}</div>
+          <div class="lightbox-keywords">{{ (lightbox.keywords||[]).join('　·　') }}</div>
+        </div>
+      </div>
+    </div>
+  </transition>
+
+</div>
+
+<script>
+// ─── STARS ───
+(function(){
+  const c = document.getElementById('stars');
+  for(let i=0;i<80;i++){
+    const s = document.createElement('div');
+    s.className='star';
+    const size = Math.random()*2+0.5;
+    s.style.cssText=`
+      width:${size}px;height:${size}px;
+      left:${Math.random()*100}%;top:${Math.random()*100}%;
+      --d:${2+Math.random()*4}s;
+      --delay:${Math.random()*4}s;
+      --min-o:${0.1+Math.random()*0.2};
+      --max-o:${0.5+Math.random()*0.5};
+    `;
+    c.appendChild(s);
+  }
+})();
+
+// ─── TAROT DATA (偉特塔羅 22 大阿爾克那 + 56 小阿爾克那 simplified) ───
+const MAJOR = [
+  { name:'愚者', num:'0', img:'https://upload.wikimedia.org/wikipedia/commons/9/90/RWS_Tarot_00_Fool.jpg', keywords:['新開始','冒險','純真','自由'] },
+  { name:'魔法師', num:'I', img:'https://upload.wikimedia.org/wikipedia/commons/d/de/RWS_Tarot_01_Magician.jpg', keywords:['意志','技巧','創造','行動'] },
+  { name:'女祭司', num:'II', img:'https://upload.wikimedia.org/wikipedia/commons/8/88/RWS_Tarot_02_High_Priestess.jpg', keywords:['直覺','神秘','內在','潛意識'] },
+  { name:'女皇', num:'III', img:'https://upload.wikimedia.org/wikipedia/commons/d/d2/RWS_Tarot_03_Empress.jpg', keywords:['豐盛','母性','創造力','自然'] },
+  { name:'皇帝', num:'IV', img:'https://upload.wikimedia.org/wikipedia/commons/c/c3/RWS_Tarot_04_Emperor.jpg', keywords:['權威','穩定','領導','秩序'] },
+  { name:'教皇', num:'V', img:'https://upload.wikimedia.org/wikipedia/commons/8/8d/RWS_Tarot_05_Hierophant.jpg', keywords:['傳統','精神','導師','信仰'] },
+  { name:'戀人', num:'VI', img:'https://upload.wikimedia.org/wikipedia/commons/3/3a/TheLovers.jpg', keywords:['選擇','愛情','結合','價值觀'] },
+  { name:'戰車', num:'VII', img:'https://upload.wikimedia.org/wikipedia/commons/9/9b/RWS_Tarot_07_Chariot.jpg', keywords:['意志力','征服','前進','控制'] },
+  { name:'力量', num:'VIII', img:'https://upload.wikimedia.org/wikipedia/commons/f/f5/RWS_Tarot_08_Strength.jpg', keywords:['內在力量','勇氣','耐心','慈悲'] },
+  { name:'隱者', num:'IX', img:'https://upload.wikimedia.org/wikipedia/commons/4/4d/RWS_Tarot_09_Hermit.jpg', keywords:['反思','孤獨','智慧','指引'] },
+  { name:'命運之輪', num:'X', img:'https://upload.wikimedia.org/wikipedia/commons/3/3c/RWS_Tarot_10_Wheel_of_Fortune.jpg', keywords:['命運','轉機','循環','機緣'] },
+  { name:'正義', num:'XI', img:'https://upload.wikimedia.org/wikipedia/commons/e/e0/RWS_Tarot_11_Justice.jpg', keywords:['公平','真相','因果','平衡'] },
+  { name:'吊人', num:'XII', img:'https://upload.wikimedia.org/wikipedia/commons/2/2b/RWS_Tarot_12_Hanged_Man.jpg', keywords:['等待','犧牲','新視角','放下'] },
+  { name:'死神', num:'XIII', img:'https://upload.wikimedia.org/wikipedia/commons/d/d7/RWS_Tarot_13_Death.jpg', keywords:['結束','轉化','新生','蛻變'] },
+  { name:'節制', num:'XIV', img:'https://upload.wikimedia.org/wikipedia/commons/f/f8/RWS_Tarot_14_Temperance.jpg', keywords:['平衡','耐心','調和','療癒'] },
+  { name:'惡魔', num:'XV', img:'https://upload.wikimedia.org/wikipedia/commons/5/55/RWS_Tarot_15_Devil.jpg', keywords:['束縛','物慾','執著','陰影'] },
+  { name:'高塔', num:'XVI', img:'https://upload.wikimedia.org/wikipedia/commons/5/53/RWS_Tarot_16_Tower.jpg', keywords:['破壞','突變','覺醒','解放'] },
+  { name:'星星', num:'XVII', img:'https://upload.wikimedia.org/wikipedia/commons/d/db/RWS_Tarot_17_Star.jpg', keywords:['希望','靈感','更新','信心'] },
+  { name:'月亮', num:'XVIII', img:'https://upload.wikimedia.org/wikipedia/commons/7/7f/RWS_Tarot_18_Moon.jpg', keywords:['幻象','恐懼','直覺','潛意識'] },
+  { name:'太陽', num:'XIX', img:'https://upload.wikimedia.org/wikipedia/commons/1/17/RWS_Tarot_19_Sun.jpg', keywords:['喜悅','成功','活力','光明'] },
+  { name:'審判', num:'XX', img:'https://upload.wikimedia.org/wikipedia/commons/d/dd/RWS_Tarot_20_Judgement.jpg', keywords:['覺醒','重生','呼喚','評估'] },
+  { name:'世界', num:'XXI', img:'https://upload.wikimedia.org/wikipedia/commons/f/ff/RWS_Tarot_21_World.jpg', keywords:['完成','整合','成就','圓滿'] },
+];
+
+const SUITS = [
+  { name:'權杖', img:'https://upload.wikimedia.org/wikipedia/commons/1/11/Wands01.jpg', theme:'行動與創造' },
+  { name:'聖杯', img:'https://upload.wikimedia.org/wikipedia/commons/3/36/Cups01.jpg', theme:'情感與直覺' },
+  { name:'寶劍', img:'https://upload.wikimedia.org/wikipedia/commons/1/1a/Swords01.jpg', theme:'思想與挑戰' },
+  { name:'錢幣', img:'https://upload.wikimedia.org/wikipedia/commons/f/fd/Pents01.jpg', theme:'物質與現實' },
+];
+const COURT = ['侍從','騎士','王后','國王'];
+const MINOR = [];
+SUITS.forEach(suit=>{
+  for(let n=1;n<=14;n++){
+    const rank = n<=10 ? (n===1?'王牌':`${n}`) : COURT[n-11];
+    MINOR.push({
+      name: `${suit.name}${rank}`,
+      num: `${rank}`,
+      img: suit.img,
+      keywords: [suit.theme],
+      suit: suit.name,
+    });
+  }
+});
+const ALL_CARDS = [...MAJOR, ...MINOR];
+
+// ─── VUE APP ───
+const { createApp, ref, computed, nextTick } = Vue;
+
+createApp({
+  setup(){
+    const step = ref(1);
+    const stepLabels = ['情境','牌陣','抽牌','解讀'];
+    const selectedScenario = ref(null);
+    const selectedSpread = ref(null);
+    const drawnCards = ref([]);
+    const readings = ref([]);
+    const summaryReading = ref('');
+    const summaryLoading = ref(false);
+    const lightbox = ref(null);
+    const shuffling = ref(false);
+
+    const scenarios = [
+      { id:'love', icon:'💕', name:'愛情感情', desc:'戀情走向、感情困惑' },
+      { id:'career', icon:'💼', name:'事業工作', desc:'職場決策、工作前景' },
+      { id:'money', icon:'💰', name:'財富金錢', desc:'財務規劃、投資運勢' },
+      { id:'growth', icon:'🌱', name:'個人成長', desc:'自我了解、內在探索' },
+      { id:'decision', icon:'🔮', name:'重要抉擇', desc:'關鍵決定、方向選擇' },
+      { id:'health', icon:'🌿', name:'身心健康', desc:'身體狀況、心靈平衡' },
+    ];
+
+    const spreads = [
+      { id:'single', icon:'🃏', name:'每日一牌', cards:1, desc:'當下訊息、每日指引', positions:['當下訊息'] },
+      { id:'three', icon:'🎴', name:'過去現在未來', cards:3, desc:'時間脈絡、三牌展開', positions:['過去','現在','未來'] },
+      { id:'celtic', icon:'✨', name:'凱爾特十字', cards:10, desc:'深度解析、全面洞見', positions:['當前情況','阻礙/助力','遠因','近因','過去','未來','提問者','外在影響','希望/恐懼','結果'] },
+    ];
+
+    const currentScenario = computed(()=> scenarios.find(s=>s.id===selectedScenario.value)||{});
+    const currentSpread = computed(()=> spreads.find(s=>s.id===selectedSpread.value)||{});
+
+    function shuffle(){
+      shuffling.value = true;
+      setTimeout(()=>{ shuffling.value = false; }, 800);
+    }
+
+    function drawCards(){
+      if(drawnCards.value.length) return;
+      const spread = currentSpread.value;
+      if(!spread.cards) return;
+
+      const pool = [...ALL_CARDS];
+      const drawn = [];
+      for(let i=0;i<spread.cards;i++){
+        const idx = Math.floor(Math.random()*pool.length);
+        const card = {...pool.splice(idx,1)[0]};
+        card.reversed = Math.random() < 0.35;
+        card.flipped = false;
+        drawn.push(card);
+      }
+      drawnCards.value = drawn;
+
+      // flip one by one
+      drawn.forEach((_,i)=>{
+        setTimeout(()=>{ drawnCards.value[i].flipped = true; }, 300 + i*350);
+      });
+    }
+
+    // ══════════════════════════════════════════
+    // 本地塔羅知識庫（完全離線，無需 API）
+    // 22 大阿爾克那 × 6 情境 × 正逆位 = 264 條
+    // 4 花色 × 6 情境 × 正逆位 + 14 牌號描述
+    // ══════════════════════════════════════════
+
+    const SC = {love:'愛情感情',career:'事業工作',money:'財富金錢',growth:'個人成長',decision:'重要抉擇',health:'身心健康'};
+
+    const MAJOR_DB = {
+      '愚者':{
+        u:{love:'愚者帶來愛情中的新生氣象。你正站在一段嶄新感情的起點，放下過去的包袱，以開放純真的心迎接未知。不要過度計算得失，讓心的直覺引導你踏出那一步，緣分有時正藏在看似魯莽的勇敢之中。',career:'愚者預示事業上充滿活力的新開端。你可能面臨換工作、創業或嘗試全新領域的機會。宇宙鼓勵你帶著熱情與好奇心出發，不要讓「準備不足」的恐懼阻礙你，初心往往比經驗更能開創奇蹟。',money:'愚者在財務上提醒你保持開放的心態，此刻是嘗試新投資方向的好時機，但請避免冒不必要的財務風險。相信自己的判斷，同時也要聽從身邊有經驗者的建議，衝動消費是此刻最大的陷阱。',growth:'愚者象徵你的靈魂渴望自由與冒險。現在是踏上自我探索之旅的最佳時機，放下那些讓你感到窒息的限制與固有身份，讓你的本真自我帶你去往未曾預想的地方，每一步都是成長。',decision:'愚者告訴你：有時最好的決定，就是帶著信念往前跳躍。過度分析可能讓你錯失良機，此刻直覺的聲音比理性計算更值得信賴，勇敢踏上未知，命運自會為你鋪路。',health:'愚者為健康帶來輕盈的能量，提醒你以孩子般的好奇心對待自己的身體。嘗試新的運動方式或飲食習慣，讓身心在探索中重獲活力，同時注意不要因粗心大意而造成不必要的意外。'},
+        r:{love:'逆位愚者警示感情中的輕率與不負責任。你或對方可能對感情缺乏承諾，或因恐懼親密而一再逃避。請誠實面對自己是否真的準備好迎接一段認真的關係，避免讓衝動傷害了真心等待你的人。',career:'逆位愚者提醒你在事業上的魯莽可能帶來後悔。在未做充分準備之前，請勿倉促辭職或做重大的職業轉換，此刻需要更踏實的計畫，天馬行空的想法需要落地才能開花。',money:'逆位愚者強烈警告財務上的衝動行為。此刻請遠離高風險投資與不理性的消費，你可能正在被不切實際的財富幻想所迷惑，回歸務實，穩紮穩打才是王道。',growth:'逆位愚者顯示你在成長路上可能陷入停滯或逃避。你或許以「自由」為名，實則是在迴避應有的責任與成熟，真正的成長需要紀律，試著找到自由與責任之間的平衡點。',decision:'逆位愚者警告你此刻的決策可能過於倉促或缺乏考量。請暫停衝動，蒐集更多資訊，讓自己有足夠的時間做出清醒的判斷，此刻不是跳躍的時機，是沉澱的時刻。',health:'逆位愚者提醒你要更加注意身體的安全與健康的規律。你可能因為粗心或生活不規律而讓身體承受不必要的壓力，請認真對待身體發出的警訊，建立穩定的作息與保健習慣。'}
+      },
+      '魔法師':{
+        u:{love:'魔法師出現在感情中，代表你擁有打動對方的魅力與主動創造緣分的能力。若你心有所屬，現在正是主動表白或深化關係的好時機，你的意志力與魅力將是最大的優勢，命運在你掌中。',career:'魔法師象徵你在職場上的能力被看見的時刻。你的技能、智慧與溝通能力都達到了高峰，善用眼前所有的資源，這是展現自我、爭取升遷或拓展影響力的絕佳時機，卓越的成果正在你手中成形。',money:'魔法師帶來財務上的主動掌控能量。你有能力通過技能與創意創造收入，現在是將想法化為實際財富的時刻。積極規劃、善用你的專業知識，財富的流入將回應你的行動力。',growth:'魔法師告訴你：你已經擁有成長所需的一切工具。現在的課題是整合你的才能並付諸實踐，你的意志力與專注力是最強大的法器，相信自己擁有創造現實的能力。',decision:'魔法師提醒你擁有做出明智決定的所有能力。此刻你的思維清晰，洞察力敏銳，善用你的智慧與直覺，將眼前的選項化為行動，你是自己命運的魔法師。',health:'魔法師帶來強健的生命力與對身體的主動掌控。現在是建立良好健康習慣的最佳時機，你的意志力足以支撐任何改變，身心靈的調整只要有意識地去做，效果將遠超你的期待。'},
+        r:{love:'逆位魔法師警告感情中可能存在操控或欺騙的陰影。對方或你自己可能並非完全真誠，以花言巧語掩蓋真實的意圖。請保持清醒，辨別對方的行為是否出於真心，避免在幻象中作出錯誤的感情投入。',career:'逆位魔法師提示職場上的才能未被充分發揮，或你正在使用不正當的手段達到目的。請重新審視你的行事方式，確保成功建立在真實的能力上，否則短暫的成功終將崩塌。',money:'逆位魔法師警告你可能在財務上被欺騙，或自己陷入不誠實的交易。遠離那些聽起來太美好的財務計畫，此刻需要謹慎核實所有合約與承諾，避免成為詐騙的目標。',growth:'逆位魔法師顯示你的才能未能得到有效運用，或你正在自我欺騙。你知道自己有能力，卻遲遲不願真正行動，請誠實面對拖延與內在的阻礙，找回行動的勇氣。',decision:'逆位魔法師提醒你此刻的決策可能建立在不完整的資訊上，或受到他人的誤導。請多方求證，不要輕易被表面現象所蒙蔽，謹慎評估每一個選項背後真實的動機與後果。',health:'逆位魔法師警告你可能在健康上有自欺欺人的傾向，忽略身體的真實狀況。請不要諱疾忌醫，也要小心被不可靠的健康資訊誤導，尋求正規的醫療建議。'}
+      },
+      '女祭司':{
+        u:{love:'女祭司在愛情中象徵深沉的靈性連結與直覺的智慧。此刻感情中有許多事情尚未浮出水面，不要急於求得答案，讓關係在靜默中自然深化。傾聽你內心深處的聲音，它比任何外在建議都更了解你真正需要的是什麼。',career:'女祭司提示職場上有隱藏的資訊或尚未顯現的機會。此刻適合靜觀其變，多觀察、多傾聽，而非急於行動。你的直覺與洞察力將幫助你看穿表面，在最恰當的時機做出精準的判斷。',money:'女祭司告訴你財務上有些事情尚不明朗，現在不是大規模行動的時機，而是深入研究與耐心等待的時刻。聽從你的直覺，若某件財務決策讓你感到不安，請認真對待這種感受。',growth:'女祭司象徵你與內在智慧的深刻連結。這是向內探索的時期，冥想、夢境、靜思都將為你帶來珍貴的啟示。潛意識中蘊藏著你一直尋找的答案，靜下心來聆聽。',decision:'女祭司告訴你此刻需要更多的沉澱與洞察，而非倉促行動。讓資訊在你心中慢慢消化，直覺將在適當的時機給你清晰的指引，等待是一種智慧，不是軟弱。',health:'女祭司提醒你傾聽身體細微的聲音。你的身心有著深刻的連結，情緒的壓抑可能在身體上顯現。冥想與靜思將有助於你深入了解自身健康狀況，讓直覺引導你找到最適合的療癒方式。'},
+        r:{love:'逆位女祭司顯示你在感情中壓抑了自己的直覺與真實感受。你可能因為害怕面對真相而刻意迴避，或因過度依賴外界意見而忽略了心裡的聲音。請勇敢與自己的內在對話，感情的答案就在你心中。',career:'逆位女祭司提示職場上可能存在隱瞞或你忽略了重要的訊號。請更仔細地審視環境，那些被你輕易略過的細節可能正藏著關鍵的訊息，重拾你的洞察力，不要被表面的繁忙迷惑。',money:'逆位女祭司警告你在財務上可能忽略了重要的隱藏資訊，或你的直覺一直在提醒你某件事卻被壓制。請靜下心來重新審視你的財務狀況，那些被你忽略的感覺值得認真對待。',growth:'逆位女祭司顯示你與內在自我的連結受到了阻礙。過度活躍的外在生活可能讓你迷失了靈性的方向，試著減少外部的噪音，重新找回與自己的深度對話。',decision:'逆位女祭司警告你在做決定時可能過於衝動，忽略了直覺的提示。表面上看似清晰的選擇，或許隱藏著你尚未察覺的複雜性，請給自己更多的時間沉澱。',health:'逆位女祭司提醒你可能長期忽視身體或心靈發出的警告信號。請不要以忙碌為藉口逃避對健康的關注，身體的某些不適可能正試圖告訴你一些重要的事，聆聽，然後採取行動。'}
+      },
+      '女皇':{
+        u:{love:'女皇在愛情中帶來豐盛、滋養與充滿感官之美的關係。你的愛充沛而慷慨，此刻的感情關係將因你的溫柔與包容而茁壯成長。若你正在等待愛情，女皇告訴你具有吸引力的你正在磁吸著對的緣分靠近。',career:'女皇象徵職場上的創造力與豐收。你的工作將開始展現出豐碩的成果，尤其在需要創意、溝通或關懷他人的領域。你的魅力與包容力也將幫助你建立良好的職場關係，獲得支持與認可。',money:'女皇帶來財務上的豐盛訊號。此刻你的財富有機會透過創意或與人合作而增加，投資或儲蓄計畫也將穩健成長。大自然般慷慨的能量圍繞著你，豐盛是你應得的狀態。',growth:'女皇象徵你內在豐盛力量的覺醒。現在是滋養自己、善待自己身體與心靈的時刻，允許自己享受生命中的美好，創意的表達與對大自然的連結將帶給你深刻的成長與療癒。',decision:'女皇建議你以豐盛而非匱乏的心態做決定。相信資源是充足的，選擇那條能讓你感到滋養與喜悅的道路，你的直覺與對美好事物的渴望是最可靠的指南針。',health:'女皇帶來強健的生命力與對身體的愛護。這是滋養身體、享受美食與自然療癒的時刻，給自己充足的休息、美好的飲食與在大自然中的時光，你的身體將以活力與美麗回應你的關愛。'},
+        r:{love:'逆位女皇可能顯示感情中的過度依賴或窒息感。你或對方可能以愛的名義過度控制，讓關係失去了呼吸的空間。也可能代表自我忽視，在付出愛的同時忘記了愛護自己，請找到給予與接受之間的平衡。',career:'逆位女皇提示職場上的創造力受阻，或你在工作中感到枯竭。可能是你過度付出卻得不到應有的認可，請重新找回工作的熱情，同時學會為自己設立適當的界限。',money:'逆位女皇警告財務上的過度揮霍或對物質的過度依賴。你可能以消費填補內心的空虛，重新審視你與金錢的關係，建立更健康、更有意識的財務習慣。',growth:'逆位女皇顯示你在滋養自己這件事上遭遇了障礙，可能是過度忙碌、自我批判，或難以接受他人的愛護。請停下來問問自己：你上次真正善待自己是什麼時候？',decision:'逆位女皇提示決策時可能受到不安全感或匱乏心態的影響。你可能因為害怕失去而做出保守或不健康的選擇，試著從豐盛而非恐懼的角度重新審視你的選項。',health:'逆位女皇警告你可能在健康上過度苛求自己，或長期忽視身體的基本需求。請停止以完美主義的標準審判自己的身體，轉而以溫柔與愛護的態度照顧自己。'}
+      },
+      '皇帝':{
+        u:{love:'皇帝在感情中代表穩定、承諾與保護。若你正在尋找愛情，你將遇到一個成熟、有責任感、能給你安全感的人。若你已有伴侶，這是建立更穩固承諾、討論長遠規劃的好時機，感情需要結構才能長久。',career:'皇帝象徵職場上的權威、領導與秩序。你的能力將得到認可，可能迎來升遷或承擔更大責任的機會。此刻展現你的領導力與組織能力，以清晰的目標與紀律的執行建立屬於你的職場成就。',money:'皇帝帶來財務上的穩固與秩序。這是建立長期財務計畫、整合投資策略的最佳時機。你的財富將因紀律與系統化的管理而穩步增長，以長遠眼光管理你的資產。',growth:'皇帝呼喚你建立內在的秩序與自律。真正的成長需要紀律與結構作為基礎，現在是制定清晰目標、建立穩定日常習慣的時機，掌控你的生命，成為自己內在王國的明智統治者。',decision:'皇帝建議你以邏輯、秩序與長遠視野做決定。不要被情緒左右，冷靜分析所有可行方案，選擇最能帶來長期穩定的選項，你有能力做出明智而有力的決策。',health:'皇帝提倡規律、紀律的健康生活方式。建立固定的作息、運動計畫與飲食規律，讓你的身體在穩定的結構中達到最佳狀態，你對健康的投入將換來長期的強健體魄。'},
+        r:{love:'逆位皇帝警告感情中可能存在過度控制或僵化的問題。你或對方可能以「負責任」為名行使不當的支配，讓感情失去了溫度，請在控制與自由之間尋找更健康的平衡。',career:'逆位皇帝顯示職場上可能面臨領導無方或被過度管控的困境。請審視工作環境是否健康，若存在權力濫用的問題，必要時請果斷地做出改變。',money:'逆位皇帝警告財務管理上的失控或過度保守，重新建立平衡的財務觀，既不揮霍也不過度吝嗇，讓財務回歸健康的節奏。',growth:'逆位皇帝揭示你在成長路上可能被過於嚴苛的自我要求所束縛，或反之，缺乏必要的紀律。試著在結構與彈性之間找到新的平衡點。',decision:'逆位皇帝警告你可能在做決定時過於固執，拒絕接受新的觀點。請以開放的心態重新審視問題，允許自己在需要時靈活調整立場。',health:'逆位皇帝提醒你過於僵硬的生活方式或工作壓力可能對健康造成傷害。學習放鬆，讓生活多一些彈性與自在，你的身體需要呼吸的空間。'}
+      },
+      '教皇':{
+        u:{love:'教皇在感情中代表傳統、承諾與精神層面的連結。這段關係可能朝向婚姻或長期承諾的方向發展，深刻的靈魂連結比激情更能長久。尋求那些與你有共同價值觀與信仰的人，感情將在精神共鳴中昇華。',career:'教皇象徵通過傳統途徑獲得成功，如接受良師指引、取得正式認證或進入成熟的機構體系。跟隨成熟的導師學習，遵循既有規則累積資歷，你的努力將在適當時機獲得認可與回報。',money:'教皇建議以保守而穩健的方式管理財務，遵循傳統的理財智慧，避免高風險的投機行為。向有經驗的財務顧問求教，傳統智慧將幫助你建立長期穩固的財富基礎。',growth:'教皇呼喚你深入探索自己的精神信仰與核心價值觀。透過傳統的智慧、靈性修行或向有智慧的導師學習，你將找到更深刻的人生意義與精神的歸屬感，信仰是成長的基石。',decision:'教皇建議你在做決定時參考傳統智慧與道德準則，諮詢你信任的長輩或導師，遵循被時間驗證的原則，有時候走已經被踩出來的路是最明智的選擇。',health:'教皇建議你在健康上尋求傳統而成熟的醫療建議，回歸時間驗證的基本原則：均衡飲食、規律運動、充足睡眠，精神健康與身體健康同樣重要。'},
+        r:{love:'逆位教皇可能顯示感情中受到傳統束縛或教條的壓迫，讓你無法真實表達自己的需求。請誠實面對你內心真正渴望的是什麼樣的愛，不要讓外在的期待主導你的感情選擇。',career:'逆位教皇提示你可能在職場上受到過時規則的限制，這也可能是挑戰現狀、找尋非傳統職業路徑的時機。不要盲目遵從，找到你自己對於工作意義的定義。',money:'逆位教皇警告你可能在財務上受到不適合自身的傳統觀念束縛。找到適合你獨特情況的理財方式，而非機械地套用他人的模式，財務自由始於獨立思考。',growth:'逆位教皇顯示你正在質疑或掙脫那些你從小接受的信仰與價值觀。允許自己去探索更廣闊的靈性視野，找到真正屬於你自己的信仰根基。',decision:'逆位教皇提醒你別讓傳統或他人的期望主宰你的決定。此刻需要跳脫框架，以自己真實的價值觀為指南，勇敢走出屬於自己的道路。',health:'逆位教皇提示你可能需要挑戰對健康的固有觀念，若傳統方法效果有限，整合性醫療或心靈層面的探索將帶來意想不到的突破。'}
+      },
+      '戀人':{
+        u:{love:'戀人牌在感情中是最強而有力的祝福訊號，預示著真實的靈魂連結、深沉的愛情，以及與對的人共同創造美好生活的可能。若你心有所屬，這是宇宙給你的確認，讓你的心的直覺帶領你做出真實的選擇。',career:'戀人牌在職場上代表一個需要做出核心價值抉擇的時刻，選擇一條真正符合你內心呼喚的職業道路，而非僅僅追求世俗的成功標準。與志同道合的夥伴合作將帶來超乎預期的成就。',money:'戀人牌在財務上提示你可能面臨與金錢價值觀相關的重要選擇。選擇那個在財務上讓你感到真實與自由的方向，確保任何財務決策都真正反映你的內心價值觀而非外在壓力。',growth:'戀人牌象徵整合對立面、找到內在和諧的成長階段。你正在學習如何在自我需求與關係責任間取得平衡，如何在物質追求與精神滿足間共存，這種整合將帶來深刻的自我認識。',decision:'戀人牌預示著一個重要的選擇時刻，聽從你的心，選擇那條讓你感到完整而非分裂的路。最高原則不是「哪個更安全」，而是「哪個更真實」，讓靈魂的聲音做最終的裁判。',health:'戀人牌提示身心靈的整合對你的健康至關重要。情感的壓抑可能影響身體，愛自己並修復重要的關係，將帶給你整體的健康與平衡，真正的健康始於內在的和諧。'},
+        r:{love:'逆位戀人顯示感情中存在失衡或錯誤的選擇。你可能停留在一段不適合的關係中，或因恐懼孤單而妥協了你真正渴望的愛。請誠實審視你的感情，真正的愛應該讓你更完整。',career:'逆位戀人顯示你目前的職業選擇可能與你的核心價值觀相違背，讓你感到空洞或不對齊。是時候深入反思：你現在的工作是否真的是你想要的？請勇敢面對這個問題。',money:'逆位戀人警告你在財務決策上可能因為感情因素而做出了不利自己的選擇。請清晰地分開情感與財務決策，確保任何財務承諾都來自清醒理性的評估。',growth:'逆位戀人顯示你在整合自身各個面向時遇到了困難，可能有內在的衝突讓你感到撕裂。給自己空間去探索這些衝突，真正的成長往往開始於誠實面對自己的陰影。',decision:'逆位戀人警告你可能在關鍵時刻做出了基於恐懼而非真實意願的選擇。問自己：如果沒有任何外在因素，我真正想要的是什麼？讓這個答案指引你重新校正方向。',health:'逆位戀人提示你在健康上可能面臨內在的衝突：明知道什麼對自己好，卻無法貫徹執行。對自己誠實而溫柔，健康的改變始於真正愛自己的決心。'}
+      },
+      '戰車':{
+        u:{love:'戰車在感情中象徵以意志力與積極態度去追求愛情。若你心有所屬，主動出擊的時機已到；若你們已在一起，現在是解決兩人之間障礙、推動感情向前的好時機。勝利屬於那些知道自己想要什麼並勇敢追求的人。',career:'戰車預示職場上的重大勝利即將到來。你的決心與執行力將克服所有障礙，以清晰的目標與無懈可擊的意志力，迎接屬於你的成功時刻，此刻的行動力是你最大的資本。',money:'戰車帶來財務上積極進取的能量，主動出擊，大膽追求財富目標，你的意志力將克服所有財務障礙。此刻是加速財富積累、完成財務目標的最佳時機，行動力是你最大的資產。',growth:'戰車呼喚你以強大的意志力掌控自己的人生方向。你擁有克服任何挑戰所需的力量，現在是鼓起勇氣、推動自我突破的時刻，自律與目標感是帶你抵達成長彼岸的戰車。',decision:'戰車告訴你：做出決定，然後全力前進。一旦你確定了方向，就以全部的意志力和行動力去實現它，優柔寡斷已無法讓你繼續前進，前方的勝利正在等待著果斷的你。',health:'戰車帶來充沛的體能與克服健康挑戰的意志力。這是推進健康目標、突破體能極限的最佳時機，以堅定的意志配合規律的行動，身體將回應你的努力超越你的想象。'},
+        r:{love:'逆位戰車在感情中警告強行控制或攻擊性的態度正在破壞關係。愛情無法靠征服獲得，請放下勝負心，學習以合作代替對抗，也可能代表你在感情中失去了方向感。',career:'逆位戰車顯示你在職場上的推進遭遇了阻力，或你的進取方式過於激進而引起了反效果。有時候暫停比衝撞更有效，確保你的雄心是建立在清晰的方向感上。',money:'逆位戰車警告財務上的急進或失控。過於激進的財務策略可能帶來損失，請踩下煞車，重新評估你的財務路線，謹慎而有計畫地前進。',growth:'逆位戰車顯示你在追求成長時可能太過用力或方向有誤，讓自己陷入疲憊與挫敗。有時候，順流而行比強行突破更有效率，允許自己在前進的過程中保持彈性。',decision:'逆位戰車警告你可能在決策中過於衝動，缺乏充分的考量。請在行動前先確保方向是正確的，有時候放慢腳步其實是更快的前進方式。',health:'逆位戰車提醒你可能過度操勞身體。請學習聆聽身體的聲音，過度的鍛鍊或忽視休息的需求只會帶來傷害，真正的健康需要在努力與恢復之間找到平衡。'}
+      },
+      '力量':{
+        u:{love:'力量牌在感情中象徵以溫柔、耐心與慈悲去愛，而非以激情或征服。你有能力以平靜而深邃的愛馴服感情中的動盪，透過溫柔的堅持讓深厚的情感連結自然浮現，真正的力量在於開放的心。',career:'力量牌預示你在職場上擁有以溫和與智慧解決困難的能力。面對挑戰時，你的冷靜、耐心與情緒智商將是最有效的武器，以柔克剛，你的影響力將超越那些只靠強硬的人。',money:'力量牌提示你在財務上需要以耐心與毅力而非衝動行事。即使面對財務壓力也不要做出衝動的決定，你內在的力量足以幫助你度過財務困境，一步一腳印，穩健前進。',growth:'力量牌象徵你正在整合自己的陰影面——那些你曾經視為弱點的本能與渴望。真正的成長在於接受自己所有的部分，以慈悲而非批判去擁抱內在的野性，你的溫柔正是你最大的力量。',decision:'力量牌告訴你以內在的平靜而非外在的壓力做決定。面對艱難的選擇時，不要被恐懼或憤怒左右，你內在的勇氣與慈悲將指引你找到最符合你靈魂深處的答案。',health:'力量牌帶來身心統整的正面能量。即使面對健康挑戰，你的內在力量與韌性足以支撐你，以溫柔而非強迫的方式對待你的身體，情緒的平靜將直接轉化為身體的康復力。'},
+        r:{love:'逆位力量顯示感情中的自我懷疑與不安全感在侵蝕著你。你可能在關係中表現出過度的焦慮、嫉妒，請先回到自己內心，重建對自己的信任，你的伴侶需要看到你內在的力量。',career:'逆位力量顯示職場上的自信受到打擊，你可能因為挫折而開始懷疑自己的能力。請重新找回內在的勇氣，這個時期的挑戰正是幫助你建立真正韌性的機會，你比你想象中更有力量。',money:'逆位力量提示在財務困境前你可能感到無力或恐懼。以務實而有條理的方式一步步解決財務問題，不要被焦慮淹沒，找回你應對挑戰的內在力量，你有能力度過難關。',growth:'逆位力量顯示你在面對內在陰影時感到恐懼，可能試圖壓抑那些你不願承認的部分。成長的關鍵在於你願不願意溫柔地面對自己最脆弱的部分，讓它們成為力量而非枷鎖。',decision:'逆位力量警告你可能在做決定時被自我懷疑癱瘓。請重新連結你內在的勇氣，記住你比你所感知的更有力量，那個最讓你恐懼的選項，有時候正是最能讓你成長的方向。',health:'逆位力量提示你的健康可能因情緒壓抑或自我批判而受影響。請尋求情緒的出口，以溫柔對待自己，療癒往往從接受自己的脆弱開始。'}
+      },
+      '隱者':{
+        u:{love:'隱者在感情中提示你需要一段獨處的時間來傾聽內心。不要因為寂寞而倉促進入新的關係，此刻的孤獨是一份禮物，讓你有機會真正了解自己在愛情中的真實需求，孤獨會帶來清醒。',career:'隱者建議你從職場的喧囂中退一步，進行深刻的自我審視。你目前的職業路徑是否真的是你的使命？此刻是靜思、充電，甚至考慮再進修的時機，智慧需要在安靜中成熟。',money:'隱者提示財務上需要深思熟慮而非衝動行事。退一步，仔細檢視你的財務狀況與長期目標，向有智慧的長者或顧問請教，真正的財富智慧往往在安靜的深思中浮現。',growth:'隱者象徵你正在進入深刻的內在探索期。這是一段珍貴的靈性旅程，在靜默與沉思中，你將發現指引你人生的那盞明燈就藏在你的內心深處，榮耀這份孤獨，它是最深刻的老師。',decision:'隱者建議你在做決定之前給自己充分的靜思時間。遠離外界的噪音與他人的意見，在安靜中傾聽你靈魂的聲音，最明智的答案往往在孤獨中才能被聽見。',health:'隱者建議你給自己充分的休息與靜養。冥想、靜思、減少外部刺激，讓你的身心靈在寧靜中自然修復，孤獨與靜默是最好的療癒師，此刻身體最需要的是深度的恢復。'},
+        r:{love:'逆位隱者警告你可能陷入過度孤立或無謂的等待。若你已經花了足夠的時間獨處，現在也許是走出去、開放心扉的時候了，讓真正想靠近你的人有機會進入你的世界。',career:'逆位隱者顯示過度的自我封閉正在限制你的發展。孤立地思考可能讓你錯失重要的機會與合作資源，此刻也許需要更多的行動與社交互動來打開新的可能性。',money:'逆位隱者警告在財務上過度保守或孤立決策可能讓你錯失良機。請打破自我孤立，尋求外部的專業意見，並願意走出舒適圈去探索新的財務可能。',growth:'逆位隱者顯示你可能過度沉溺於內省而脫離了現實生活，或反之，逃避必要的獨處與自我反思。成長既需要向內探索，也需要與世界互動，找到健康的節奏。',decision:'逆位隱者提示你可能以「需要更多時間思考」為藉口迴避做決定。或許你已擁有足夠的資訊，現在需要的不是更多的沉思，而是邁出那一步的勇氣。',health:'逆位隱者提醒你過度的孤立可能對心理健康造成影響。獨處是有益的，但完全隔絕可能加深孤獨感，請找到適合的社交連結，讓生命因他人的陪伴而再次獲得光亮。'}
+      },
+      '命運之輪':{
+        u:{love:'命運之輪在感情中預示著一個命中注定的轉折。新的緣分可能在意想不到的時刻出現，或目前的感情關係將迎來重要的新階段。命運的齒輪正在轉動，保持開放的心，最好的故事往往在你最意想不到的時候展開。',career:'命運之輪預示職業上的重大轉機即將到來。一個新的機會或重要的改變正朝你靠近，準備好迎接命運的禮物，即使是看似不利的變動，從更宏觀的視角來看也往往是命運為你設計的更好安排。',money:'命運之輪帶來財運的正向轉機。一個意外的財務機會可能即將浮現，或你的財務狀況將有所好轉。保持積極的態度，好運正在輪轉向你靠近，準備好接住命運送來的禮物。',growth:'命運之輪象徵你的人生正在進入一個全新的循環。無論之前走過怎樣的路，命運始終在向前轉動，此刻是接受變化、擁抱命運安排的時機，每一次輪轉都帶來成長的新可能。',decision:'命運之輪提示你的決定將在宇宙更大的時機中被放大。相信命運的安排，順流而行，讓命運帶你去你應該去的地方，此刻即使微小的決定也可能觸發一系列重要的連鎖反應。',health:'命運之輪帶來健康上的轉機。若你一直被某些健康問題困擾，改善的轉捩點可能即將到來，相信自然的療癒循環，你的身體有著驚人的自我修復能力，保持正念靜待好轉。'},
+        r:{love:'逆位命運之輪顯示感情運勢陷入低谷，或你正在抗拒感情中必要的改變。試圖緊握已經不再服務你的舊事物，只會讓輪轉更加痛苦，也許是放手的時候了。',career:'逆位命運之輪警告職業運勢暫時不順，或你錯失了重要的時機。此刻需要的是耐心等待下一個轉機，同時反思是否有什麼舊有模式需要改變，改變模式，命運才能改變方向。',money:'逆位命運之輪提示財運低迷或不穩定的時期。避免在此刻做重大的財務決策，先求穩定，等待命運之輪轉回有利的方向，此刻的逆境也許是在提醒你審視並改變不健康的財務習慣。',growth:'逆位命運之輪顯示你正在抗拒命運帶來的改變，試圖緊握已經不再服務你的舊事物。放手才能讓新的可能進來，信任命運，即使目前的輪轉令你不安，也要相信它有其更深的意義。',decision:'逆位命運之輪警告此刻的時機可能不利於重大決策，先求穩定，等待更有利的時機。同時反思你是否一直在做著相同的決定卻期待不同的結果，改變模式才能改變命運。',health:'逆位命運之輪提示健康上的反覆或困境。是時候打破那個讓你停滯的生活循環，命運的改善需要你先做出改變，重複不健康的模式只會讓情況持續惡化。'}
+      },
+      '正義':{
+        u:{love:'正義在感情中代表公平、誠實與相互尊重的關係。這是審視感情是否建立在真實與平等基礎上的時機，誠實面對感情中的真相，才能讓關係健康成長，真實的愛需要真實的基礎。',career:'正義預示職場上的公平評價與應得的回報即將到來。你的努力將獲得應有的認可，確保你在職場中以誠信原則行事，因果法則公正無私，你種下什麼就會收穫什麼。',money:'正義在財務上代表公平的收支平衡與誠實的財務交易。確保你的所有財務行為都合乎道德，因為因果律在財務上同樣精確運作，公正的財務態度將帶來長期的穩定與信任。',growth:'正義呼喚你誠實面對自己的行為、選擇與其帶來的後果。真正的成長需要你對自己負責，既不過度自責，也不迴避應有的責任，在誠實中找到成長的力量。',decision:'正義建議你在做決定時遵循公平與真實的原則。仔細權衡所有的利弊，一個符合真理的決定，即使困難，終將帶來真正的平靜，偏離真實的選擇只會帶來更大的代價。',health:'正義提示你需要正視身體的客觀狀態，若需要醫療建議，尋求公正客觀的第二意見，確保生活方式在身心各方面都達到了真正的平衡，誠實面對健康現況才能做出正確的改變。'},
+        r:{love:'逆位正義警告感情中存在不公平或不誠實的問題，讓感情建立在不穩固的基礎上。面對真相是修復和重建真實關係的唯一途徑，即使它令人不舒服，誠實才能帶來真正的療癒。',career:'逆位正義顯示職場上可能存在不公平的待遇，或你在工作中以不正當的方式行事。前者需要你勇敢地為自己發聲，後者則需要誠實地重新審視自己的行為，公正終將到來。',money:'逆位正義強烈警告財務上可能存在欺詐或不公平的合約，在任何財務交易上必須格外謹慎，仔細核查所有條款，若你自己在財務上有不誠實的行為，現在是糾正的時候了。',growth:'逆位正義顯示你可能在逃避自我負責，或以受害者心態看待自己的處境。真正的成長要求你正視自己的選擇如何影響了你的現狀，在誠實中找到成長的力量。',decision:'逆位正義警告你的決定可能帶有偏見，或你正在逃避一個你明知是正確但困難的選擇。請誠實面對你真正知道是對的事，即使它讓你不舒服，偏離真理的路往往帶來更大的代價。',health:'逆位正義提示健康問題可能被忽視或誤診，請以清醒客觀的眼光審視你真實的健康狀況，並採取相應的行動，誠實面對身體的需求是健康改善的第一步。'}
+      },
+      '吊人':{
+        u:{love:'吊人在感情中代表一段有意識的等待與犧牲的時期。你需要改變看待這段感情的角度，以全新的視野去理解你們之間的動態，此刻的暫停是讓雙方都有機會重新思考你們真正想要的是什麼。',career:'吊人建議你暫時放慢職業上的腳步，允許自己進入一個反思與等待的狀態。這段看似停滯的時期，實際上是在醞釀未來更大的突破，耐心是此刻最大的智慧，不要強行推進。',money:'吊人提示財務上可能有一段時間的停滯或需要某種犧牲。你也許需要暫時放棄眼前的利益，以換取未來更長遠的收益，重新審視你對金錢的觀念，有時候放手比緊握更能帶來豐盛。',growth:'吊人象徵你正在經歷一個深刻的靈性暫停，讓你有機會從完全不同的角度看待自己的人生。這種顛倒的視角雖然不舒服，卻是帶來深刻領悟的禮物，在懸停中，智慧正在形成。',decision:'吊人告訴你此刻不是做決定的時機，而是靜待與醞釀的時刻。讓自己暫停，讓局勢繼續發展，有些事情需要更多的時間才能看清真相，等待也是一種積極的行動。',health:'吊人建議你的身體需要一段深度休息與恢復的時期，暫時放下那些對身體的要求，讓自己有足夠的時間和空間去療癒，靜止有時比行動更有力量，深度休養是此刻最好的療方。'},
+        r:{love:'逆位吊人顯示你可能已在感情中等待太久，是時候採取行動或做出決定了。你也許一直在推遲一個你明知需要面對的感情決定，繼續等待只是在延長不必要的煎熬。',career:'逆位吊人警告職業上的過度猶豫與拖延正在讓機會流失。停滯已久的局面需要你的行動力來打破，此刻該果斷出手了，不要再以等待更好時機為藉口。',money:'逆位吊人顯示財務上的不必要犧牲或拖延正在讓情況惡化，是時候採取積極的財務行動了，停止等待奇蹟，主動出擊才能改變財務狀況。',growth:'逆位吊人顯示你陷入停滯是因為抗拒而非接受。如果你一直在等一個不會來的解脫，也許是時候自己主動走出僵局了，成長需要你主動踏出那一步。',decision:'逆位吊人強烈提示停止拖延，做出那個你一直逃避的決定。你已經有足夠的資訊，繼續等待只是在消耗你的能量，相信自己的判斷，採取行動從這個自設的困境中解放自己。',health:'逆位吊人警告你可能因長期拖延而讓健康問題積累惡化，是時候採取主動行動了，行動帶來改變，等待只帶來更多的拖延，你的身體需要你現在就採取行動。'}
+      },
+      '死神':{
+        u:{love:'死神在感情中代表深刻的轉化而非字面上的終結。一段感情可能走到了一個重要的轉折點，需要「死去」某些舊有的模式才能在更高的層次重生。若一段不健康的關係真的走到了終點，放手本身就是愛的最高形式。',career:'死神象徵職業上的一個重要結束，同時也是新開始的契機。不要過度哀悼這個結束，它正在為你在職業旅途上的下一個更精彩的篇章清掃空間，在結束中孕育著新生的種子。',money:'死神提示財務上的某些舊有模式需要徹底終結。讓這些舊的財務模式死去，為真正的財富轉化創造空間，那些不再服務你的財務策略與消費習慣，是時候讓它們終結了。',growth:'死神是成長中最強而有力的盟友，象徵著那些不再服務你的自我認同與習慣模式的終結。真正的蛻變需要舊有的自我死去，才能讓更真實、更成熟的你浮現，歡迎這場內在的死亡與重生。',decision:'死神告訴你一個時代即將結束，一個新的開始已在等待。你面對的決定可能需要你徹底放下某些東西，才能真正走向前，勇敢地讓結束發生，命運的轉化需要舊事物的終結作為啟動鍵。',health:'死神在健康上代表舊習慣的徹底終結是康復的關鍵。讓那些傷害你身體的習慣真正「死去」，一場全面的健康更新正在等待你，首先需要的是放手和徹底的改變。'},
+        r:{love:'逆位死神顯示你在感情中抗拒必要的終結或轉化，緊抓著一段已死去的感情不肯放手。繼續抵抗只會延長痛苦，允許變化發生，生命才能繼續流動，真正的愛需要空間才能呼吸。',career:'逆位死神警告你在職業上緊抓著已不再適合的舊事物，阻礙了必要的轉化。放手需要勇氣，但只有放手，新的機會才能進來，不要讓對失去的恐懼阻礙你走向更好的未來。',money:'逆位死神顯示財務轉化受阻，通常因為你對舊有財務模式的抗拒。放下那些已不再有效的財務策略，才能迎來真正的財務新生，舊有的模式無論多熟悉，若已不再有效就必須改變。',growth:'逆位死神顯示你在成長路上因抗拒蛻變而停滯，緊握著舊有的身份認同讓你窒息。真正的轉化往往伴隨著對未知的恐懼，而正是穿越那份恐懼，才能抵達更廣闊的自我。',decision:'逆位死神強烈提示你正在逃避一個需要徹底改變的決定。繼續拖延只會讓必然的轉化更加痛苦，請鼓起勇氣，讓已死去的事物得到安息，為新的開始騰出空間。',health:'逆位死神警告你在健康上拒絕改變那些顯然有害的習慣，讓身體承受不必要的持續傷害。為了你的長期健康，這個放手必須發生，你的身體在等待你做出那個改變的決定。'}
+      },
+      '節制':{
+        u:{love:'節制在感情中帶來平衡、耐心與調和的能量。這段感情正在以穩健而健康的步伐發展，無需急於求成。學習以溫和、包容的方式調和彼此的差異，真正的愛是在兩個完整的個體之間自然流動的。',career:'節制建議在職場上採取平衡、循序漸進的策略。你的耐心與平衡的工作態度將帶來持久的成果，比倉促衝刺更能建立穩固的職業基礎，此刻以調和的方式整合職場關係尤為重要。',money:'節制帶來財務上的平衡與謹慎的理財建議。在消費與儲蓄之間找到健康的節奏，以平穩而有計畫的方式向目標前進，慢慢的穩健成長將帶來真正持久的豐盛。',growth:'節制象徵你的靈魂正在學習調和對立、找到中道的智慧。讓生命中的各個面向——理性與感性、行動與靜止、給予與接受——流動於你之中，形成一個更完整的自我。',decision:'節制建議在做決定時尋找中道，避免走向任何極端。最明智的選擇往往不是非此即彼，而是找到一個整合各方優點的第三條路，耐心讓事情自然成熟，時機成熟的決定將帶來真正的和諧。',health:'節制帶來身心靈調和的能量。以溫和漸進的方式改善健康，中道的生活方式——均衡飲食、適度運動、充足休息——正是你身體最需要的藥方，節制本身就是最好的養生之道。'},
+        r:{love:'逆位節制顯示感情中的失衡，可能是過度黏膩或過度疏離，都在破壞關係的健康。找回平衡，需要雙方都有意識地去調和彼此的需求，讓感情在適當的距離中保持溫度。',career:'逆位節制顯示你在職場上可能走向了極端，要麼過勞要麼完全喪失動力。失去了平衡的工作狀態需要重新校正，找回對工作的熱情與意義，以及適當的工作與休息平衡。',money:'逆位節制警告財務失衡的問題，可能是過度消費或過度節儉到影響生活品質。找到一個既能讓你享受當下又能保障未來的財務平衡點，讓財務管理服務生活而非控制生活。',growth:'逆位節制顯示你在生命的某個面向走向了極端，失去了整體的平衡。這種不均衡正在消耗你的能量，請退一步觀察全局，找出哪些地方需要重新調和，讓生命回歸和諧的流動。',decision:'逆位節制警告你在做決定時可能走向了不必要的極端，忽略了中道的智慧。尋找那個能夠整合多方需求、帶來真正和諧的解決方案，而非非此即彼的對立選擇。',health:'逆位節制提示你的健康因失衡而受到影響，可能是飲食、運動、睡眠或情緒上的某種極端。重新校正你的生活方式，讓節制的智慧回到你的日常中，身心靈的和諧需要有意識的維護。'}
+      },
+      '惡魔':{
+        u:{love:'惡魔在感情中揭示了你被某種執著、恐懼或不健康的模式所束縛。也許是對伴侶的過度依賴、嫉妒或佔有欲，或者感情建立在物質滿足或不健康的激情上。這些鎖鏈是你自己戴上的，覺察本身就是解鎖的第一步。',career:'惡魔在職場上揭示了你可能被對金錢、地位或安全感的執著所束縛，以至於停留在一個不健康的工作環境中。你的工作是否真的服務了你的靈魂？覺察你的束縛，才能獲得真正的自由。',money:'惡魔警告財務上的過度貪婪、物質主義或對金錢的病態執著。審視你與金錢之間的關係，確保金錢是你的工具而非主人，你可能正在以消費填補內心真正需要的是什麼。',growth:'惡魔象徵你正在面對自己最深的陰影——那些束縛你的恐懼、上癮模式與自我限制性的信念。這張牌的出現是一個邀請：去正視那些你一直迴避的內在黑暗，覺察是解脫的開始。',decision:'惡魔警告你的決定可能正在被恐懼、執著或自我限制的信念所左右，而非出於真正的自由意志。請深入探索：在這個決定背後，驅動你的究竟是愛還是恐懼？是自由的選擇還是習慣性的逃避？',health:'惡魔警告上癮行為、不健康的習慣或對身體的虐待正在影響你的健康。覺察是改變的開始，你有能力從這些束縛中解放自己，但需要誠實面對它們的存在而非繼續否認。'},
+        r:{love:'逆位惡魔是一個解脫的訊號，代表你正在從感情中不健康的束縛中醒來，開始尋求更真實、更自由的關係模式。你已開始看見那些鎖鏈，現在有力量選擇放下它們走向光明。',career:'逆位惡魔代表你正在掙脫職場上的束縛，重新發現自己的真實價值與使命。這種覺醒雖然令人不安，卻是走向真正職業滿足的必要步驟，你值得一份真正讓你感到自由的工作。',money:'逆位惡魔代表你正在從對物質的過度執著中解放出來，重新建立更健康的財務價值觀。繼續這條解脫之路，讓金錢回歸工具的本質，真正的豐盛是內在的自由而非外在的積累。',growth:'逆位惡魔代表你正在突破那些長期束縛你的模式與信念，走向真正的自由。你已經開始看見光了，繼續這個解放自我的勇敢旅程，你比過去任何時候都更接近真正的自由。',decision:'逆位惡魔告訴你有能力擺脫那些曾經束縛你的恐懼，做出更自由、更真實的選擇。你正在覺醒於過去那些出於恐懼的決策模式，現在可以以更清醒的眼光選擇真正服務你靈魂成長的道路。',health:'逆位惡魔是健康解脫的訊號，代表你正在打破不健康的習慣循環，也許你終於決定要直面那個你一直逃避的健康問題。繼續這個改變的勇氣，你正在邁向真正的健康自由。'}
+      },
+      '高塔':{
+        u:{love:'高塔在感情中預示著一場突如其來的震盪，可能是衝突、分離，或一個揭露真相的時刻。高塔摧毀的是謊言，保留的是真實的愛，那些在震盪後仍能屹立的感情才是建立在真實基礎上的。',career:'高塔預示職場上的突然變動，如解僱、公司重組或職業計畫的崩塌。雖然令人震驚，但在廢墟中你將找到重建一個更真實、更符合你本性的職業方向的機會，破壞即是建設的前奏。',money:'高塔警告財務上的突然崩潰或損失，那些建立在不穩固基礎上的財務計畫將被揭露。以更穩健的原則重建你的財務，這次衝擊是一個機會讓你建立真正堅固的財務基礎。',growth:'高塔象徵一場靈魂的劇烈地震，它的使命是摧毀那些阻礙你真正成長的虛假建構。高塔的閃電雖然令人恐懼，卻是最快速的啟蒙，在廢墟中，真實的你終將浮現。',decision:'高塔提示你可能正站在一個將帶來劇烈改變的關鍵決策前。試圖阻止高塔的倒塌只會讓撞擊更加劇烈，有時候允許它發生才是最明智的選擇，破壞舊有才能迎接真正的新生。',health:'高塔在健康上代表可能突然出現的健康警示，迫使你不得不重視身體的需求。請認真對待這個信號，它在強迫你做出你一直拖延的健康改變，身體的警報是一種保護而非懲罰。'},
+        r:{love:'逆位高塔顯示感情中的危機已過去，或你正在抗拒必要的改變。有時候允許事物瓦解，才能讓真正的愛得以重建，抓緊一段已經崩潰的感情只會讓雙方都更受傷。',career:'逆位高塔顯示你可能在職業上抗拒一個不可避免的改變，或你正在從一段職業動盪中慢慢恢復。請給自己時間整合這段經歷，並從廢墟中找到重生的方向，最壞的時刻已經過去。',money:'逆位高塔顯示財務危機可能已過去，或你正在從財務衝擊中緩慢恢復。請面對現實，尋求必要的幫助，從這場財務動盪中學到的教訓將成為未來穩固財務的基石。',growth:'逆位高塔顯示你正在從一場靈魂地震後的廢墟中重建自我，請溫柔對待自己，重建需要時間，從廢墟中浮現的你將比之前更真實也更堅強。',decision:'逆位高塔提示一場急迫的危機已經過去，或你正在逃避一個需要你承認現實的決定。若情況需要你承認某件事的失敗或終結，請誠實面對，這種誠實將是重建的第一塊磚石。',health:'逆位高塔顯示一段激烈的健康危機已過，或你正在抗拒那個你身體一直在發出的強烈警告。若仍在逃避，請立即採取行動，你的身體不能再等了，健康的重建從承認問題開始。'}
+      },
+      '星星':{
+        u:{love:'星星是感情中最美好的療癒符號。若你剛走過感情的低谷，它帶來希望與新生的承諾；若你在尋找愛情，星星告訴你美好的緣分正在悄悄靠近。保持對愛的信心與開放的心，你是值得被深深愛著的。',career:'星星為職業帶來靈感、希望與新的可能性。保持對夢想的信心，即使前路有未知，星星告訴你你正走在正確的軌道上，你的獨特才能即將得到展現的舞台，繼續相信你的使命。',money:'星星帶來財務上的希望與更新。若你近期有財務困境，情況即將好轉，相信宇宙的豐盛，讓希望的能量吸引財富向你流動，此刻是重新設定財務目標的好時機。',growth:'星星象徵深刻的靈性療癒與內在更新。你正在與更高的自我重新連結，你的靈魂在最黑暗的夜裡仍然閃閃發光。相信你的成長之路，前方有光，最黑暗的時刻之後就是黎明。',decision:'星星鼓勵你以希望與信心做決定，追隨那個讓你靈魂發光的選項，不要因為現實的挑戰而放棄你的夢想與理想。當你做出符合靈魂呼喚的選擇，宇宙將為你鋪路。',health:'星星帶來療癒的能量與希望的光芒。若你正在面對健康挑戰，情況將逐漸好轉，保持對康復的信心，讓喜悅成為你療癒的動力，接近大自然讓宇宙的療癒能量滋養你的身心。'},
+        r:{love:'逆位星星顯示你在感情上感到絕望或失去了信心，或過度理想化感情而對現實感到失望。請不要放棄對愛的希望，但也要學習在現實中尋找真實而非完美的愛，你值得的愛是真實的。',career:'逆位星星顯示你對未來的職業夢想感到灰心，或過度理想化導致了現實的落差感。不要放棄你的夢想，但試著以更務實的步驟去實現它，每一個微小的行動都是向你的星星靠近。',money:'逆位星星顯示財務上的悲觀情緒可能在影響你做出好的財務決策，或你對財務狀況過於樂觀而忽略了潛在的問題。重新燃起對財務未來的希望，但以務實的計畫作為燃料。',growth:'逆位星星顯示你暫時失去了對成長之路的信心，感到幻滅或停滯。太陽始終在那裡，即使被雲遮蔽，允許自己休息然後再度起飛，暫時的黑暗不代表永恆的終點。',decision:'逆位星星警告不要在悲觀或絕望的情緒下做出重要決定。你現在看到的可能只是暫時的黑暗而非真實的終點，等待你的希望感恢復後再做決定，清醒的心才能做出正確的選擇。',health:'逆位星星顯示你對康復感到悲觀，這種心態本身可能正在阻礙你的療癒進程。請找回對身體恢復能力的信心，負面的信念往往比疾病本身更能阻礙療癒，希望是最強大的藥。'}
+      },
+      '月亮':{
+        u:{love:'月亮在感情中代表迷霧、幻象與未被揭露的真相。你或對方可能有些事情沒有直接表達，此刻不宜做出重大感情決定，讓時間與直覺帶你穿越迷霧，真相終將浮現，不要被表面的現象所迷惑。',career:'月亮提示職場上存在隱藏的議程或不清晰的局勢。此刻請謹慎，傾聽你的直覺，它能感知到那些尚未明朗的真相，等待迷霧散去再做決定，倉促行動在此刻很容易犯錯。',money:'月亮在財務上警告你可能被誤導或正處於資訊不完整的情況。避免在此刻做出重大的財務決策，你的直覺若感到不安請認真對待，謹慎核查所有財務資訊的真實性。',growth:'月亮邀請你深入潛意識的領域，探索那些你可能一直迴避的恐懼與陰影。你的夢境、直覺與情緒正在傳達重要的訊息，穿越月亮的迷霧你將發現深埋在你內心的真相。',decision:'月亮強烈建議你此刻暫緩重大決定。局勢尚不明朗，等待迷霧散去讓真相自然浮現，倉促的決定在月亮的迷幻之下很容易後悔，此刻的等待將換來更清晰的視野。',health:'月亮提示你的健康狀況可能有些不明朗，傾聽身體發出的微妙訊號，關注情緒與心理狀態對身體的影響。若對診斷結果不確定，請尋求第二意見，不要讓焦慮在黑暗中無限放大。'},
+        r:{love:'逆位月亮顯示感情中的迷霧正在散去，隱藏的真相即將浮現。你可能終於開始看清一段感情的真實面貌，不論這個真相令人欣喜還是心痛，它都是讓你走向真實感情的必要清醒。',career:'逆位月亮顯示職場上的混亂情勢正在逐漸明朗，隱藏的訊息或真相即將浮現。隨著迷霧消散，你將能夠做出更清醒、更有依據的職業決定，之前感知到的不對勁現在終於有了答案。',money:'逆位月亮顯示財務上的混亂或不明朗狀況正在好轉，那些你一直感到困惑的財務問題開始有了答案，讓你能夠做出更清醒的財務決策，過去的誤導或不透明正在被揭露。',growth:'逆位月亮代表你正在從迷惑與恐懼中走向清醒。那些讓你夜不能寐的焦慮正在失去力量，你開始能夠用更清晰的眼光看待自己的真實狀況，繼續這個清醒的過程。',decision:'逆位月亮顯示之前令你困惑的局勢正在明朗，這是一個好時機重新審視那個你一直在迴避的決定。你現在擁有更清晰的視野，讓清醒後的直覺指引你做出真正屬於自己的選擇。',health:'逆位月亮顯示困擾你的健康謎題正在找到答案，或那些讓你焦慮的健康不確定性正在消散。此刻是採取明確行動改善身心狀態的好時機，清晰的洞察將指引你走向真正的健康。'}
+      },
+      '太陽':{
+        u:{love:'太陽是感情中最閃耀的祝福！它帶來純粹的喜悅、真實的連結與充滿活力的愛。若你在尋找愛情，美好的緣分就要到來；若你已有伴侶，你們的感情將迎來一段充滿陽光與喜悅的快樂時光，讓自己真實地閃耀。',career:'太陽預示職業上的輝煌時刻即將到來！你的才能將得到充分展現，成就感與認可將滾滾而來。這是一段充滿能量與自信的職業高峰期，你的熱情與創意將感染周圍的人，帶來卓越的成果。',money:'太陽帶來財務上的豐盛與繁榮！你的財務努力正在達到圓滿，重要的財務目標即將實現。以樂觀而積極的心態管理財務，豐盛的能量將持續滋養你的財富，感恩並善用這段豐收的時光。',growth:'太陽象徵你的靈魂正在經歷最明亮的綻放！這是一段充滿喜悅、活力與自我實現的成長時期，你的真實自我正在以最燦爛的方式展現，讓自己充分感受這份存在的喜悅，你的光芒是世界的禮物。',decision:'太陽鼓勵你以充滿信心與喜悅的心態做決定，選擇那條讓你感到活力充沛的路，你的直覺在此刻清晰而明亮。相信你的選擇，前方是充滿光明的廣闊天空，喜悅是最好的方向指引。',health:'太陽帶來強健的生命力與充沛的活力！感恩你的健康並積極地享受你的體能。陽光、歡笑與正向的心態是最好的養生之道，讓喜悅成為你健康的燃料，此刻的身體狀態充滿活力。'},
+        r:{love:'逆位太陽顯示感情中的光芒暫時被烏雲遮蔽，可能是不實際的期望或短暫的誤解。太陽的光永遠存在，烏雲只是暫時的，請重新找回你在感情中真實而純粹的喜悅，不要讓短暫的陰影定義你的愛。',career:'逆位太陽顯示職業熱情暫時低迷，或你的才能還未得到應有的認可。不要因此失去對自己的信心，此刻是重新燃起工作熱情的時機，你的才能值得更好的舞台，太陽的光芒終將再度照耀。',money:'逆位太陽顯示財務上可能有些令人失望的狀況，或你對財務狀況過於樂觀而忽略了潛在的問題。既要相信財務的好轉，也要做好踏實的財務管理，不要讓盲目的樂觀掩蓋需要解決的問題。',growth:'逆位太陽顯示你的內在光芒暫時被陰影遮蔽，可能是低自尊、暫時的迷失，或環境的壓抑讓你無法真實展現自己。請記住：太陽始終在那裡，找回那個閃閃發光的真實的你。',decision:'逆位太陽提示你在做決定時可能過於樂觀，忽略了潛在的風險與挑戰。最好的決定來自希望與現實意識的完美結合，而非盲目的樂觀，保持積極的同時也要以清醒的眼光評估現實。',health:'逆位太陽顯示活力暫時低迷，重新連結那些讓你感到喜悅與充滿活力的事物，同時也要誠實地面對身體的真實需求，不要以正向思考取代必要的醫療照護，兩者需要同時並行。'}
+      },
+      '審判':{
+        u:{love:'審判在感情中代表一個重要的覺醒時刻，你被呼喚去重新評估你在這段感情中的真實狀態。聆聽來自靈魂深處的呼喚讓它指引你在愛中的下一步，這可能是舊情的重燃或你終於看清感情的真實本質。',career:'審判代表職業上的重大覺醒，你被呼喚去重新評估你的真正使命。是時候響應那個使命，做出將深刻影響你職業軌跡的決定了，靈魂的呼喚比任何外在的成功標準都更值得被聆聽。',money:'審判提示財務上的全面評估與新的開始。這是回顧過去財務決策、學習教訓，然後以更清醒的意識重新規劃財務藍圖的時機，過去的財務課題在此刻得到清算，為新章節做好準備。',growth:'審判象徵一場靈魂的大覺醒。你正在被一個比個人意志更大的力量呼喚去實現你這一生真正的使命，這是評估你的行為、放下舊有自我、以更高的意識重生的神聖時刻，你的靈魂準備好了。',decision:'審判告訴你此刻的決定將具有深遠的靈魂意義，深入傾聽那個來自靈魂深處的呼喚，讓它引導你做出一個將讓你真正覺醒的選擇，而非只是最舒適或最安全的選擇。',health:'審判呼喚你全面審視你的身心靈健康，特別是那些長期被你忽視的面向。聆聽那個呼喚你做出根本改變的內在聲音並回應它，這是一個改頭換面的時機，不只是身體，還有你對健康的整體態度。'},
+        r:{love:'逆位審判顯示你在感情中迴避了一個應該面對的重要課題，你一直等待感情自行好轉，卻沒有意識到改變必須從你自己開始。請鼓起勇氣，回應靈魂在感情中對你的呼喚。',career:'逆位審判顯示你可能一直在忽略一個要求你重大職業轉變的內在呼喚。自我懷疑或對改變的恐懼讓你停在原地，請認真傾聽，你拖延的那個職業改變，也許正是你最需要的成長。',money:'逆位審判顯示你可能在逃避對財務現實的全面評估，誠實地審視、學習，然後以更清醒的意識前進。財務的覺醒雖然不舒服，卻是改變的起點，逃避只會讓問題繼續積累。',growth:'逆位審判顯示你正在抗拒靈魂的呼喚，逃避那個需要你做出根本改變的成長邀請。靈魂的使命不會因你的拒絕而消失，它只會呼喚得越來越響亮，直到你願意聆聽為止。',decision:'逆位審判顯示你可能在逃避一個你明知是正確的重大決定。請寬恕自己的過去，以清醒而慈悲的眼光重新面對眼前的選擇，你已比你自己以為的更準備好了。',health:'逆位審判顯示你在健康上一直逃避面對一個需要根本改變的面向。請以慈悲而非嚴苛的態度面對你的健康現實，覺醒永遠不嫌遲，你的身體在等待你做出那個改變的決定。'}
+      },
+      '世界':{
+        u:{love:'世界在感情中代表圓滿的連結與深刻的靈魂相遇。這可能預示著一段感情走向婚姻或長期承諾的圓滿，或你已在愛中找到了真正的自己。以完整而自由的心迎接愛的新旅程，一個更宏大的愛的故事正在等待你。',career:'世界象徵職業成就的圓滿與一個重要里程碑的達成！你的努力終於得到了應有的回報，這也意味著一個更大的職業循環即將開啟，你已為下一個更廣闊的舞台做好了準備，好好慶祝這個圓滿的時刻。',money:'世界帶來財務上的豐收與完整！你的財務努力正在達到圓滿，重要的財務目標即將實現。豐盛是你應得的，你已完成了通往財富的重要功課，現在是享受成果並規劃下一個財務目標的時刻。',growth:'世界象徵靈魂進化中一個重要循環的圓滿完成。你已整合了所有的人生課題，達到了一種深刻的內在完整感，以全新的完整攜帶著你所有的智慧，踏上下一段更宏大的征途。',decision:'世界告訴你：你已準備好了。此刻做出的決定將完成一個重要的人生循環，同時開啟一個全新的章節，選擇那條讓你感到圓滿與自由的道路，你已具備了做出最智慧選擇的一切條件。',health:'世界帶來全面健康的喜訊！你的身心靈正在達到一種難得的整體平衡與圓滿。感恩你的身體，以完整而感激的心繼續滋養這份來之不易的健康，此刻身體的狀態令你感到前所未有的完整。'},
+        r:{love:'逆位世界顯示感情中有未完成的課題，或你因為恐懼承諾而在愛的門口徘徊。請完成那些懸而未決的感情功課，才能真正走向圓滿，你離真正的愛的圓滿比你想象的更近。',career:'逆位世界顯示職業成就感的缺失，或你正處於完成一個重要職業目標的最後阻礙面前。請允許自己到達終點然後再出發，你比你自己以為的更接近那個圓滿的時刻。',money:'逆位世界顯示財務目標尚有未完成的部分，或你對已取得的財務成就感到不滿足。請反思這種不滿足感的根源，真正的豐盛始於內心的圓滿而非永無止境的積累。',growth:'逆位世界顯示某些未解決的課題阻礙了真正的圓滿，請找出那些懸而未決的個人功課，勇敢地完成它們，這不是失敗，而是你走向真正完整所需的最後幾步。',decision:'逆位世界顯示你即將完成一個重要的循環，但某些事情讓你無法真正做出最終的決定。請溫柔而誠實地面對是什麼阻礙了你的圓滿，然後勇敢地跨出最後一步。',health:'逆位世界顯示你在健康上感到尚未達到你所希望的整體狀態，找出那個阻礙圓滿的最後一塊拼圖，讓整體的健康真正完成，你離全面健康的圓滿只差最後的那一步努力。'}
+      }
+    };
+
+    const SUIT_DB = {
+      '權杖':{
+        u:{love:'權杖的火熱能量點燃了你的感情世界，帶來激情、冒險與充滿活力的戀情。感情中將有令人興奮的新進展，讓這份熱情引領你勇敢表達愛意，此刻主動出擊是最好的策略。',career:'權杖的創造力與行動能量在職場上為你帶來出色的表現機會。這是展現你的才能與熱情的時刻，你對工作充滿幹勁，以信心領導，以熱情執行，卓越的成果正在等待著你。',money:'權杖的進取能量提示財務上需要主動出擊。你的創業精神與行動力將帶來財富的增長機會，但請確保熱情之外有踏實的計畫支撐，避免純粹衝動的財務冒險。',growth:'權杖象徵創意火花與靈感的爆發，推動你在成長的道路上大步前進。讓這份能量驅動你跨越那些讓你停滯的障礙，此刻的你充滿了改變自我的熱情與動力，燃燒地活著。',decision:'權杖能量支持你果敢地做出決定並立即行動，選擇那個讓你充滿活力的選項，然後全力以赴地去實現它，你的直覺和熱情是此刻最好的指南。',health:'權杖帶來充沛的生命力與旺盛的行動欲，這是積極鍛鍊、嘗試新運動的好時機，讓你的身體盡情活動，釋放積累的能量，你的體能正處於一個強健的狀態。'},
+        r:{love:'逆位權杖能量顯示感情中的熱情消退或頻繁爭吵，請給過熱的情緒降溫，學習以更冷靜的方式溝通，避免一時的激動做出讓你後悔的事，此刻需要耐心而非衝動。',career:'逆位權杖顯示職場上的挫折或計畫受阻，強硬衝撞可能適得其反，試試從不同角度突破困境，重新整理你的優先順序，暫時的停滯是在為下一次更好的出發做準備。',money:'逆位權杖警告衝動財務決策帶來的損失，請收斂過於進取的財務態度，重新評估風險，以更謹慎的步伐推進你的財務目標，熱情需要理性作為後盾。',growth:'逆位權杖顯示你的創意與動力受到阻礙，可能感到沮喪或精力耗盡，讓熱情有機會恢復，而非強迫自己在耗竭中繼續燃燒，有時候休息才是更好的前進。',decision:'逆位權杖警告衝動決策帶來的後悔，請暫停衝動的行動，重新評估你的策略，確保熱情有務實的計畫作為後盾，方向比速度更重要。',health:'逆位權杖提示能量耗竭或過度勞累，請給自己充分的休息，不要強迫疲憊的身體繼續超負荷運作，恢復比繼續衝刺更重要，讓身體充電然後再出發。'}
+      },
+      '聖杯':{
+        u:{love:'聖杯的溫柔水流帶來感情上的深刻情感連結與豐沛的愛意流動。你的感情生活正沐浴在溫暖與滋養之中，情感上的理解與包容讓這段關係越來越深刻，敞開你的心，讓愛自然地流動。',career:'聖杯在職場上提示以情感智商與創意直覺帶動工作成效。你與同事、客戶的情感連結是你的重要資產，在需要同理心與創意的工作中，你的天賦將得到充分發揮，真誠的連結帶來卓越的成果。',money:'聖杯提示財務上的直覺將是你的引導，對財務上的感受保持敏感，不只用理性分析，也要傾聽內心的感受，與他人合作的財務計畫可能帶來令人滿意的結果。',growth:'聖杯象徵情感的成熟與內在世界的豐盛。你正在深入探索自己的情感世界，以更大的慈悲與包容接納自己和他人，這種情感的成長將帶來靈魂真正的滿足與平靜。',decision:'聖杯建議你傾聽情感的智慧做決定，你的直覺與情感感受包含了重要的訊息，不要完全依賴邏輯，讓心的聲音也在決策中佔有一席之地，感性與理性的整合才能做出完整的決定。',health:'聖杯帶來情感與身體的溫柔療癒，讓壓力消融，允許自己去感受情緒並將其釋放，情緒的流動正是健康的流動，此刻親近水元素——泡澡、游泳、接近海洋——對你的療癒特別有益。'},
+        r:{love:'逆位聖杯顯示感情中的情緒失衡或溝通不暢，你可能因情感需求未被滿足而感到委屈，或雙方在情感上都有所迴避。誠實表達你的感受，情感的流動需要安全的管道才能健康流動。',career:'逆位聖杯顯示工作中的情緒化反應正在影響你的表現，學習在職場中管理情緒，避免讓個人感受過度影響專業判斷，找到情感表達與職業邊界的平衡是此刻的功課。',money:'逆位聖杯警告情緒化的財務決策，如衝動消費以填補情感空虛，請覺察你的消費行為背後的情感需求，以更健康的方式滿足自己，避免讓情緒左右你的財務判斷。',growth:'逆位聖杯顯示情緒積壓或對情感的迴避正在阻礙你的內在成長，面對而非逃避那些讓你不舒服的情緒是真正成熟的開始，壓抑的情感需要出口，讓自己安全地感受並釋放。',decision:'逆位聖杯警告你可能在情緒低潮的狀態下做決定，容易受到恐懼或悲觀的影響。請等待情緒穩定後再做重要決定，此刻的感受不代表客觀的現實，情緒的浪潮終將平息。',health:'逆位聖杯提示情緒問題正在影響身體健康，允許自己哭泣、表達、感受，情緒的宣洩本身就是一種深刻的療癒，長期壓抑的情感是許多身體問題的根源。'}
+      },
+      '寶劍':{
+        u:{love:'寶劍的清明之風帶來感情上的理性清醒與真相的揭示，以清晰的溝通取代迴避。即使真相有時傷人，直面它才能讓感情走向真正的健康與清晰，誠實是感情長久的基礎。',career:'寶劍在職場上代表敏銳的思維、清晰的溝通與果斷的行動，你的分析能力將幫助你做出明智的職業決策，面對困難也能以清醒的頭腦找到解決方案，說真話做對事是你的優勢。',money:'寶劍提示財務上需要清晰的思路與理性的分析，以清醒的眼光審視你的財務狀況，做出有依據的決策，避免被情緒或衝動左右，清醒的財務認知是長期穩定的基礎。',growth:'寶劍象徵智識的突破與思維的清明，用真理作為武器切斷那些不再服務你的思想模式，清明的思維是自由的開始，你有能力辨別什麼是真實的什麼是自己製造的幻象。',decision:'寶劍支持你以清醒的頭腦和直接的方式做決定，以理性和真相為基礎，即使選擇困難，做出清醒而誠實的決定將帶來真正的解脫，清晰的決定比模糊的猶豫更能推動你前進。',health:'寶劍提示心理健康與思維清晰的重要性，訓練自己辨別有益的思考與無益的反芻，以清明的心智引導身體走向健康，有時候思維的轉變比任何身體療法都更能帶來健康的改善。'},
+        r:{love:'逆位寶劍顯示感情中的傷害或無謂的爭吵正在破壞你們的關係，語言帶來的傷害比想象中更深，請在開口前三思，學習以建設性的方式表達你的不滿而非用言語傷人。',career:'逆位寶劍警告職場上的衝突或謊言，保持清醒以事實和誠信回應挑戰，不要讓憤怒讓你在言語上犯下錯誤，以智慧而非情緒應對職場的挑戰才能保護自己。',money:'逆位寶劍警告財務上的欺詐或糟糕的財務決策帶來的損失，此刻格外需要核查財務合約的細節，避免被誤導性的資訊左右，任何讓你感到不對勁的財務交易都值得深入審查。',growth:'逆位寶劍顯示思維的混亂或過度批判自我正在阻礙你的成長，學習區分哪些思維是真實的哪些只是你內在批評者的聲音，然後勇敢地挑戰那些阻礙你的謊言。',decision:'逆位寶劍警告思維不清或資訊缺乏將讓你的決定偏離正軌，請先理清思路，獲取更全面的資訊，避免在混亂或憤怒的狀態下做出會後悔的決定，清醒是做好決定的前提。',health:'逆位寶劍提示過度思慮或焦慮正在嚴重影響你的身心健康，那些反覆轉動的負面思維正在消耗你的生命力，學習放下那些不健康的思考模式，若需要請尋求心理方面的專業支持。'}
+      },
+      '錢幣':{
+        u:{love:'錢幣帶來感情中的穩定、踏實與長期承諾的能量，雙方都願意為關係的長期穩定投入實際的時間與努力。踏實的愛往往比激情更能長久，在日常生活的共建中感情將越來越深厚。',career:'錢幣象徵職場上的踏實積累與穩健的職業成長，你的努力與專業技能正在帶來可見的成果，一步一腳印的工作方式將為你建立起堅實的職業口碑與財務基礎，繼續踏實地前進。',money:'錢幣帶來財務上最實際的豐盛訊號，繼續以穩健的步伐積累，避免衝動，財富將如同大地般踏實地在你身邊積累，你在財務管理上的紀律與努力正在累積出真實的財富。',growth:'錢幣象徵以踏實的行動在現實生活中實現成長，以務實的態度對待你的成長目標，讓改變在現實的土地上生根發芽，真正的成長不只在頭腦中，還需要在每天的生活中付諸實踐。',decision:'錢幣建議你以務實、長遠的角度做決定，考量選項的實際可行性與長期影響，腳踏實地的選擇往往最能帶來真正的安全感，選擇那個最能帶來穩固基礎的選項。',health:'錢幣提倡身體健康的實際照護：規律的作息、均衡的飲食與穩定的運動習慣，健康建立在日積月累的踏實習慣上，不要尋找捷徑，真正的健康是一點一滴在土地上種出來的。'},
+        r:{love:'逆位錢幣顯示感情中的物質不安全感或對承諾的逃避，分清感情與物質的需求，找回感情的真實溫度，不要讓財務壓力或物質考量佔據了感情中最重要的情感連結。',career:'逆位錢幣顯示職場上的財務不穩定或工作停滯，重新評估你的職業策略，找出阻礙進步的實際問題並著手解決，有時候需要願意做出實際的改變而非只是期待情況自行好轉。',money:'逆位錢幣警告財務上的不穩定或損失，此刻需要重新審視你的財務管理方式，找回財務的平衡與流動性，過度保守和過度冒進都可能造成財務的停滯或損失。',growth:'逆位錢幣顯示你的成長因過度注重物質或缺乏實際行動而停滯，把你的理論應用在真實的生活場景中，真正的成長需要從想法走向具體的行動才能在現實中生根。',decision:'逆位錢幣警告過於保守或因物質擔憂而做出的決定可能限制你的發展空間，在安全與成長之間找到更健康的平衡，評估風險是必要的但過度的恐懼可能讓你錯失真正的機會。',health:'逆位錢幣提示你可能因過於忙碌追求物質而忽略了身體的基本需求，回歸基本：充足的睡眠、真實的食物、規律的運動，讓健康重新紮根在踏實的日常中。'}
+      }
+    };
+
+    const NUM_MSG = {
+      '王牌':[
+        '象徵著純粹而充滿潛力的新開始，把握這個充滿可能的時刻，以開放的心迎接它帶來的一切，一個新的循環正在此刻啟動。',
+        '代表新開始受阻，或可能錯失了珍貴的機會。請重新開放自己，讓新的能量有機會進入你的生命，調整心態比等待時機更重要。'
+      ],
+      '2':['代表平衡、合作與一個重要選擇的時刻，與他人的合作或一個二選一的決定將成為此刻的關鍵，尋找平衡點而非極端。','顯示猶豫不決或夥伴關係失衡，請直面那個你一直在拖延的決定，拖延只會讓情況更加複雜，做出選擇比永遠在等待更有力量。'],
+      '3':['象徵創意合作的豐收與成長，你的努力正在聚集足夠的力量，繼續與志同道合的人合作，成果將比你預期的更加豐盛。','顯示創意受阻或協作失敗，請重新審視合作關係或計畫的方向，找出問題所在並調整策略，有時候改變合作方式比繼續硬撐更有效。'],
+      '4':['代表穩固的基礎與暫時的休整，讓局面先穩定下來，然後再規劃下一步，靜止是為了更好的前進，這段休整期有其重要的意義。','顯示停滯不前或無謂的保守正在讓你的生活失去活力，是時候打破僵局，重新讓能量流動起來了，舒適圈需要被突破。'],
+      '5':['象徵挑戰與衝突，提示你正面臨一個需要被克服的困境，以勇氣與智慧面對它，你將在另一端變得更強大，挑戰是成長的催化劑。','顯示衝突正在逐漸化解，或你正在學習從挑戰中找到意義，艱難的時期正在過去，請繼續在廢墟中尋找成長的養分。'],
+      '6':['帶來和諧、療癒與善意的循環，有美好的交流與互助正在發生，感恩這份流動的善意並繼續以慷慨的心傳遞它，愛的流動將帶來更多的愛。','顯示過去的和諧已被打破，或施與受之間的失衡正在影響你的關係，檢視你的給予與接受是否達到了健康的平衡，失衡需要被覺察並調整。'],
+      '7':['提示你需要以策略與耐心應對當前的局勢，明智地選擇你的戰場，不是每一場戰都值得全力投入，智慧在於分辨哪些值得堅持。','顯示策略失當或因缺乏耐心而讓計畫功虧一簣，重新評估你的方法，有時候改變策略比堅持原有計畫更需要智慧和勇氣。'],
+      '8':['象徵技藝的精進與穩健的前進，以專注與勤奮精進你的能力，你的努力正在一點一滴地積累，成果已在前方等待，持續的努力必將開花結果。','顯示能量停滯或重複的模式讓你原地踏步，是時候打破那個讓你停滯的循環，以全新的視角重新出發，重複相同的行動卻期待不同的結果是徒勞的。'],
+      '9':['代表接近目標的時刻，你幾乎達到了你想要的狀態，但最後這段路需要保持清醒，確保最終的結果是你真正想要的，不要在快到終點時放棄。','顯示孤立、自我懷疑或偏執的焦慮正在消耗你的能量，請尋求連結，不要讓自己在黑暗中孤軍奮戰，尋求支持是力量而非弱點。'],
+      '10':['象徵一個循環的圓滿完成，無論這個結局是喜是悲，它都是通往新開始的必要終點，一個重要的人生篇章正在完結，為新的開始騰出空間。','顯示結束的重量壓得你難以喘息，請放下不再服務你的負擔，你背負的已夠多，是時候輕裝前進了，放手是一種智慧而非失敗。'],
+      '侍從':['帶來新鮮的視角與充滿好奇的探索精神，保持初學者的開放心態，讓新的訊息與靈感引導你走向嶄新的方向，每一個新的開始都值得以好奇心迎接。','顯示計畫尚未成熟就倉促行動，或思維不成熟帶來的混亂，花時間讓想法充分發展，確保在行動之前已有紮實的計畫，急於求成反而欲速不達。'],
+      '騎士':['帶來大膽行動與充滿熱情的前進能量，積極主動地去追求你想要的，你的行動力與勇氣將是最大的優勢，此刻前進的力量比等待更重要。','顯示衝動、魯莽或能量失控帶來的問題，你的熱情和行動力是優點，但此刻需要更多的方向感和謹慎，確保行動的方向是正確的再全力前進。'],
+      '王后':['帶來成熟的智慧、溫暖的關懷與豐沛的創造能量，你的直覺與關愛他人的能力是此刻最強大的資源，以你的溫柔與智慧滋養你的生活與關係。','顯示滋養的能量失衡，可能是過度犧牲或情感上的枯竭，請先好好照顧自己，你無法從一個空杯子中倒出水來，愛自己才能更好地愛他人。'],
+      '國王':['代表成熟的掌控力與清晰的領導智慧，以冷靜、權威而公正的方式引領你的局面，你的判斷力與成熟度是此刻最大的優勢，做你自己人生的明智國王。','顯示領導力失衡，可能是過度控制或完全失去方向，重新建立清晰的個人原則與方向感，真正的領導從對自己的誠實掌控開始，找回你的核心。']
+    };
+
+    function getLocalReading(card, scId, position, isReversed) {
+      const orient = isReversed ? 'r' : 'u';
+      const sc = scId || 'growth';
+      let base = '';
+
+      if (MAJOR_DB[card.name]) {
+        base = MAJOR_DB[card.name][orient][sc] || MAJOR_DB[card.name][orient]['growth'];
+      } else {
+        const suitBase = SUIT_DB[card.suit] ? (SUIT_DB[card.suit][orient][sc] || SUIT_DB[card.suit][orient]['growth']) : '';
+        const numArr = NUM_MSG[card.num];
+        const numBase = numArr ? numArr[isReversed ? 1 : 0] : '';
+        base = suitBase + (numBase ? `\n\n${card.name}${numBase}` : '');
+      }
+
+      return position ? `在「${position}」的位置上，${base}` : base;
+    }
+
+    function buildSummary(cards, scId, spreadName, positions) {
+      const scName = SC[scId] || '人生課題';
+      const cardDescs = cards.map((c,i) => `【${positions[i]}】${c.name}（${c.reversed?'逆位':'正位'}）`).join('、');
+      const positiveCount = cards.filter(c => !c.reversed).length;
+      const energy = positiveCount >= cards.length * 0.6 ? '整體能量流暢而充滿可能' : positiveCount <= cards.length * 0.4 ? '整體能量提醒你需要更深的覺察與轉化' : '整體能量在光與影之間尋求平衡';
+      const themes = [...new Set(cards.flatMap(c => c.keywords || []))].slice(0, 4);
+      const themeStr = themes.length > 0 ? `，核心主題圍繞著【${themes.join('、')}】` : '';
+      return `在這次關於「${scName}」的${spreadName}牌陣中，你抽到了：${cardDescs}。\n\n${energy}${themeStr}。\n\n星辰的訊息清晰而深刻：此刻你最重要的功課，是整合這些牌面帶來的智慧，以清醒的心與勇敢的行動，在「${scName}」的旅程中書寫屬於你的篇章。記住，牌面是一面鏡子，映照的是你內在的真實，而改變的力量始終在你自己手中。`;
+    }
+
+    function getReading() {
+      step.value = 4;
+      readings.value = [];
+      summaryReading.value = '';
+      summaryLoading.value = false;
+
+      const sc = currentScenario.value;
+      const sp = currentSpread.value;
+      const cards = drawnCards.value;
+
+      // 逐張顯示，模擬占卜師逐一解牌的儀式感
+      summaryLoading.value = false;
+
+      cards.forEach((c, i) => {
+        setTimeout(() => {
+          const text = getLocalReading(c, sc.id, sp.positions[i], c.reversed);
+          readings.value.push(text);
+
+          // 最後一張顯示完，才顯示 loading 並生成綜合解讀
+          if (i === cards.length - 1 && cards.length > 1) {
+            summaryLoading.value = true;
+            setTimeout(() => {
+              summaryReading.value = buildSummary(cards, sc.id, sp.name, sp.positions);
+              summaryLoading.value = false;
+            }, 300);
+          }
+        }, 400 + i * 700);
+      });
+    }
+
+    function openLightbox(card, position) {
+      lightbox.value = { ...card, position };
+    }
+
+    function restart(){
+      step.value = 1;
+      selectedScenario.value = null;
+      selectedSpread.value = null;
+      drawnCards.value = [];
+      readings.value = [];
+      summaryReading.value = '';
+      summaryLoading.value = false;
+    }
+
+    return {
+      step, stepLabels, selectedScenario, selectedSpread,
+      scenarios, spreads, currentScenario, currentSpread,
+      drawnCards, readings, summaryReading, summaryLoading, shuffling,
+      shuffle, drawCards, getReading, restart, openLightbox, lightbox,
+    };
+  }
+}).mount('#app');
+
+// ESC 鍵關閉 lightbox
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    const app = document.querySelector('#app').__vue_app__;
+    if (app) {
+      const root = app._context.app._instance;
+      if (root && root.data && root.data.lightbox) root.data.lightbox = null;
+    }
+  }
+});
+</script>
+</body>
+</html>
+
